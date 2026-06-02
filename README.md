@@ -1,6 +1,5 @@
 # homebridge-monster-smart-lighting
 
-[![verified-by-homebridge](https://img.shields.io/badge/homebridge-plugin-blueviolet?style=flat)](https://homebridge.io)
 ![platform](https://img.shields.io/badge/type-platform-lightgrey)
 [![npm](https://img.shields.io/npm/v/homebridge-monster-smart-lighting.svg)](https://www.npmjs.com/package/homebridge-monster-smart-lighting)
 [![npm downloads](https://img.shields.io/npm/dm/homebridge-monster-smart-lighting.svg)](https://www.npmjs.com/package/homebridge-monster-smart-lighting)
