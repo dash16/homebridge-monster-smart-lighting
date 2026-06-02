@@ -1,5 +1,4 @@
 // src/monster-api.ts
-
 import type { Logger } from 'homebridge';
 
 const MONSTER_BASE_URL = 'https://api.monstergen2.bycopilot.com';
@@ -175,7 +174,7 @@ export class MonsterApi {
 			throw new Error('Cannot acquire Sphere partner ticket without a Monster access token.');
 		}
 
-		this.log.debug('Acquiring Sphere partner ticket...');
+		this.log.info('Acquiring Sphere partner ticket...');
 
 		const response = await this.requestJson<SphereTicketResponse>(
 			`${SPHERE_BASE_URL}/v2/partner/${SPHERE_PARTNER_ID}/acquire_ticket`,
@@ -200,7 +199,7 @@ export class MonsterApi {
 
 		this.spherePartnerTicket = response.partnerTicket;
 
-		this.log.debug(`Sphere partner ticket acquired. Ticket length: ${response.partnerTicket.length}`);
+		this.log.info('Sphere partner ticket acquired.');
 	}
 
 	private async ensureAylaAuth(): Promise<void> {
@@ -222,8 +221,7 @@ export class MonsterApi {
 			return;
 		}
 
-		this.log.debug(`Monster login config: email=${this.config.email}, passwordLength=${this.config.password.length}`);
-		this.log.debug('Authenticating with Monster Smart Lighting cloud service...');
+		this.log.info('Authenticating with Monster Smart Lighting cloud service...');
 		const response = await this.requestJson<MonsterLoginResponse>(
 			`${MONSTER_BASE_URL}/v4/auth/login`,
 			{
@@ -264,8 +262,7 @@ export class MonsterApi {
 		this.monsterRefreshToken = response.refreshToken;
 		this.monsterTokenExpiresAt = Date.now() + response.expiresIn * 1000;
 
-		this.log.debug('Monster authentication succeeded.');
-		this.log.debug(`Monster token length: ${response.accessToken.length}`);
+		this.log.info('Monster authentication succeeded.');
 	}
 
 	private async signInToAyla(): Promise<void> {
@@ -273,7 +270,7 @@ export class MonsterApi {
 			throw new Error('Cannot sign in to Ayla without a Sphere partner ticket.');
 		}
 
-		this.log.debug('Exchanging Sphere partner ticket for Ayla access token.');
+		this.log.info('Exchanging Sphere partner ticket for Ayla access token.');
 
 		const response = await this.requestJson<AylaTokenResponse>(
 			`${AYLA_USER_BASE_URL}/api/v1/token_sign_in`,
@@ -296,7 +293,7 @@ export class MonsterApi {
 		this.aylaRefreshToken = response.refresh_token;
 		this.aylaTokenExpiresAt = Date.now() + response.expires_in * 1000;
 
-		this.log.debug('Ayla authentication succeeded.');
+		this.log.info('Ayla authentication succeeded.');
 	}
 
 	private getAylaHeaders(): Record<string, string> {

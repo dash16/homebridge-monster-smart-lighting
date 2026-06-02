@@ -1,3 +1,4 @@
+//src/platform.ts
 import type { API, Characteristic, DynamicPlatformPlugin, Logging, PlatformAccessory, PlatformConfig, Service } from 'homebridge';
 
 import { MonsterApi } from './monster-api.js';
@@ -30,7 +31,7 @@ export class MonsterSmartLighting implements DynamicPlatformPlugin {
 		const password = String(this.config.password ?? '').trim();
 		
 		if (email && password) {
-			this.log.debug(`Monster config normalized: email=${email}, passwordLength=${password.length}`);
+			this.log.debug('Monster Smart Lighting credentials found.');
 			this.monsterApi = new MonsterApi(this.log, {
 				email,
 				password,
@@ -39,10 +40,10 @@ export class MonsterSmartLighting implements DynamicPlatformPlugin {
 			this.log.warn('Monster Smart Lighting email/password are not configured. No devices will be discovered.');
 		}
 
-		this.log.debug('Finished initializing platform:', this.config.name);
+		this.log.info('Finished initializing platform:', this.config.name);
 
 		this.api.on('didFinishLaunching', () => {
-			this.log.debug('Executed didFinishLaunching callback');
+			this.log.debug('Homebridge finished launching; starting device discovery.');
 			void this.discoverDevices();
 		});
 	}
@@ -58,8 +59,12 @@ export class MonsterSmartLighting implements DynamicPlatformPlugin {
 		}
 
 		try {
+			this.log.info('Discovering Monster Smart Lighting devices...');
+			
 			const devices = await this.monsterApi.getDevices();
-
+			
+			this.log.info('Discovered %d Monster Smart Lighting device(s).', devices.length);
+			
 			for (const device of devices) {
 				const uuid = this.api.hap.uuid.generate(device.dsn);
 				const existingAccessory = this.accessories.get(uuid);

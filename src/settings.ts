@@ -1,9 +1,4 @@
-/**
- * This is the name of the platform that users will use to register the plugin in the Homebridge config.json
- */
+//src/settings.ts
 export const PLATFORM_NAME = 'MonsterSmartLighting';
 
-/**
- * This must match the name of your plugin as defined the package.json `name` property
- */
 export const PLUGIN_NAME = 'homebridge-monster-smart-lighting';

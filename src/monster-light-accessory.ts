@@ -154,7 +154,11 @@ export class MonsterLightAccessory {
 		await this.monsterApi.setProperty(this.device.dsn, 'power', on ? 1 : 0);
 		this.state.On = on;
 
-		this.platform.log.debug(`Set ${this.device.productName} On ->`, on);
+		this.platform.log.info(
+			'Setting %s power %s',
+			this.device.productName,
+			on ? 'on' : 'off',
+		);
 	}
 
 	private async getOn(): Promise<CharacteristicValue> {
@@ -172,7 +176,11 @@ export class MonsterLightAccessory {
 		await this.monsterApi.setProperty(this.device.dsn, 'color_bright', brightness);
 		await this.monsterApi.setProperty(this.device.dsn, 'brightness', brightness);
 	
-		this.platform.log.debug(`Set ${this.device.productName} Brightness ->`, brightness);
+		this.platform.log.info(
+			'Setting %s brightness to %d%%',
+			this.device.productName,
+			brightness,
+		);
 	}
 
 	private async getBrightness(): Promise<CharacteristicValue> {
@@ -225,7 +233,11 @@ export class MonsterLightAccessory {
 	
 		this.state.ColorTemperature = homeKitMired;
 	
-		this.platform.log.debug(`Set ${this.device.productName} ColorTemperature ->`, homeKitMired, `(Monster ${monsterTemp})`);
+		this.platform.log.info(
+			'Setting %s color temperature to %d mired',
+			this.device.productName,
+			homeKitMired,
+		);
 	}
 
 	private async getColorTemperature(): Promise<CharacteristicValue> {
@@ -234,7 +246,14 @@ export class MonsterLightAccessory {
 
 	private async setRgbColorFromState(): Promise<void> {
 		const rgbInt = this.hsvToRgbInt(this.state.Hue, this.state.Saturation, this.state.Brightness);
-
+		
+		this.platform.log.info(
+				'Setting %s color (H:%d S:%d)',
+				this.device.productName,
+				this.state.Hue,
+				this.state.Saturation,
+			);
+		
 		await this.monsterApi.setProperty(this.device.dsn, 'mode', 'color');
 		await this.monsterApi.setProperty(this.device.dsn, 'color_select', rgbInt);
 	}
