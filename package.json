@@ -2,7 +2,7 @@
   "name": "homebridge-monster-smart-lighting",
   "displayName": "Homebridge Monster Smart Lighting",
   "type": "module",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "private": false,
   "description": "Homebridge plugin that integrates your Monster Smart Lighting account and exposes all supported devices.",
   "author": "Dustin Newell",
@@ -27,8 +27,8 @@
   ],
   "main": "dist/index.js",
   "homebridge": {
-  	"pluginType": "platform",
-  	"platform": "MonsterSmartLighting"
+    "pluginType": "platform",
+    "platform": "MonsterSmartLighting"
   },
   "engines": {
     "node": "^22.10.0 || ^24.0.0",
