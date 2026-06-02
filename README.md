@@ -1,202 +1,170 @@
-<p align="center">
+# homebridge-monster-smart-lighting
 
-<img src="https://github.com/homebridge/branding/raw/latest/logos/homebridge-wordmark-logo-vertical.png" width="150">
+[![verified-by-homebridge](https://img.shields.io/badge/homebridge-plugin-blueviolet?style=flat)](https://homebridge.io)
+![platform](https://img.shields.io/badge/type-platform-lightgrey)
+[![npm](https://img.shields.io/npm/v/homebridge-monster-smart-lighting.svg)](https://www.npmjs.com/package/homebridge-monster-smart-lighting)
+[![npm downloads](https://img.shields.io/npm/dm/homebridge-monster-smart-lighting.svg)](https://www.npmjs.com/package/homebridge-monster-smart-lighting)
+![node-lts](https://img.shields.io/badge/node%20LTS-20%7C22%7C24-6aa84f)
+![license](https://img.shields.io/github/license/dash16/homebridge-monster-smart-lighting.svg)
 
-</p>
+[![issues](https://img.shields.io/github/issues/dash16/homebridge-monster-smart-lighting.svg)](https://github.com/dash16/homebridge-monster-smart-lighting/issues)
+![last commit](https://img.shields.io/github/last-commit/dash16/homebridge-monster-smart-lighting.svg)
+![typescript](https://img.shields.io/badge/language-typescript-3178c6)
 
-<span align="center">
+# homebridge-monster-smart-lighting
 
-# Homebridge Platform Plugin Template
+Homebridge plugin for integrating Monster Smart Lighting devices with Apple HomeKit.
 
-</span>
+This plugin connects to your Monster Smart Lighting account, discovers supported devices automatically, and exposes them to HomeKit through Homebridge.
 
-This is a template Homebridge dynamic platform plugin and can be used as a base to help you get started developing your own plugin.
+---
 
-This template should be used in conjunction with the [developer documentation](https://developers.homebridge.io/). A full list of all supported service types, and their characteristics is available on this site.
+## Features
 
-### Clone As Template
+* HomeKit support for Monster Smart Lighting devices
+* Automatic device discovery
+* On/Off control
+* Brightness control
+* Color temperature control
+* RGB color control
+* HomeKit state synchronization
+* Child bridge compatible
+* Homebridge UI configuration support
+* Debug logging support for troubleshooting
 
-Click the link below to create a new GitHub Repository using this template, or click the *Use This Template* button above.
+---
 
-<span align="center">
+## Supported Devices
 
-### [Create New Repository From Template](https://github.com/homebridge/homebridge-plugin-template/generate)
+The plugin currently supports Monster lighting devices that expose standard lighting capabilities through the Monster Smart Lighting cloud platform.
 
-</span>
+Tested functionality includes:
 
-### Setup Development Environment
+* Power control
+* Brightness control
+* Color temperature control
+* RGB color control
 
-To develop Homebridge plugins you must have Node.js 22 or later installed, and a modern code editor such as [VS Code](https://code.visualstudio.com/). This plugin template uses [TypeScript](https://www.typescriptlang.org/) to make development easier and comes with pre-configured settings for [VS Code](https://code.visualstudio.com/) and ESLint. If you are using VS Code install these extensions:
+Additional RGBIC-specific features such as segments, scenes, DIY modes, and music modes are planned for future releases.
 
-- [ESLint](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint)
+If a device appears incorrectly in HomeKit or is missing functionality, please open an issue with:
 
-### Install Development Dependencies
+* The device model
+* A screenshot or product link from the Monster Smart Lighting app
+* Debug logs
 
-Using a terminal, navigate to the project folder and run this command to install the development dependencies:
+---
 
-```shell
-npm install
+## Requirements
+
+* Node.js 20 or newer
+* Homebridge v1.8.0 or newer
+* A Monster Smart Lighting account
+* At least one compatible Monster Smart Lighting device
+
+---
+
+## Installation
+
+Install through the Homebridge UI or manually with npm:
+
+```bash
+npm install -g homebridge-monster-smart-lighting
 ```
 
-### Update package.json
+After installation:
 
-Open the [`package.json`](./package.json) and change the following attributes:
+1. Open the Homebridge UI
+2. Add and configure the plugin
+3. Enter your Monster Smart Lighting account email and password
+4. Restart Homebridge
 
-- `name` - this should be prefixed with `homebridge-` or `@username/homebridge-`, is case-sensitive, and contains no spaces nor special characters apart from a dash `-`
-- `displayName` - this is the "nice" name displayed in the Homebridge UI
-- `homepage` - link to your GitHub repo's `README.md`
-- `repository.url` - link to your GitHub repo
-- `bugs.url` - link to your GitHub repo issues page
+Devices should appear automatically after startup.
 
-When you are ready to publish the plugin you should set `private` to false, or remove the attribute entirely.
+---
 
-### Update Plugin Defaults
+## Device Notes
 
-Open the [`src/settings.ts`](./src/settings.ts) file and change the default values:
+### Color and Color Temperature
 
-- `PLATFORM_NAME` - Set this to be the name of your platform. This is the name of the platform that users will use to register the plugin in the Homebridge `config.json`.
-- `PLUGIN_NAME` - Set this to be the same name you set in the [`package.json`](./package.json) file.
+Devices that support both RGB color and color temperature are exposed using standard HomeKit Lightbulb characteristics. The Home app presentation may vary slightly depending on the iOS, iPadOS, or macOS version in use.
 
-Open the [`config.schema.json`](./config.schema.json) file and change the following attribute:
+### RGBIC Features
 
-- `pluginAlias` - set this to match the `PLATFORM_NAME` you defined in the previous step.
+The current release focuses on standard lighting controls.
 
-See the [Homebridge API docs](https://developers.homebridge.io/#/config-schema#default-values) for more details on the other attributes you can set in the `config.schema.json` file.
+Advanced RGBIC functionality such as:
 
-### Build Plugin
+* Segment control
+* Dynamic scenes
+* DIY modes
+* Music modes
 
-TypeScript needs to be compiled into JavaScript before it can run. The following command will compile the contents of your [`src`](./src) directory and put the resulting code into the `dist` folder.
+is planned for future releases as HomeKit-compatible implementations are evaluated.
 
-```shell
-npm run build
-```
+---
+## Technical Notes
 
-### Link To Homebridge
+### Authentication Flow
 
-Run this command so your global installation of Homebridge can discover the plugin in your development environment:
+Monster Smart Lighting authentication currently follows a multi-stage cloud flow:
 
-```shell
-npm link
-```
+Monster Cloud → Sphere → Ayla
 
-You can now start Homebridge, use the `-D` flag, so you can see debug log messages in your plugin:
+The plugin authenticates with Monster Smart Lighting, exchanges credentials through Sphere services, and ultimately obtains the Ayla credentials used for device discovery and control.
 
-```shell
-homebridge -D
-```
+## Troubleshooting
 
-### Watch For Changes and Build Automatically
+### Device not responding
 
-If you want to have your code compile automatically as you make changes, and restart Homebridge automatically between changes, you first need to add your plugin as a platform in `./test/hbConfig/config.json`:
-```
-{
-...
-    "platforms": [
-        {
-            "name": "Config",
-            "port": 8581,
-            "platform": "config"
-        },
-        {
-            "name": "<PLUGIN_NAME>",
-            //... any other options, as listed in config.schema.json ...
-            "platform": "<PLATFORM_NAME>"
-        }
-    ]
-}
-```
+1. Confirm the device still responds in the Monster Smart Lighting app
+2. Restart Homebridge
+3. Enable debug logging
+4. Check Homebridge logs for authentication or cloud communication errors
 
-and then you can run:
+### Missing devices
 
-```shell
-npm run watch
-```
+If a device is not discovered:
 
-This will launch an instance of Homebridge in debug mode which will restart every time you make a change to the source code. It will load the config stored in the default location under `~/.homebridge`. You may need to stop other running instances of Homebridge while using this command to prevent conflicts. You can adjust the Homebridge startup command in the [`nodemon.json`](./nodemon.json) file.
+1. Verify it appears in the Monster Smart Lighting app
+2. Restart Homebridge
+3. Enable debug logging
+4. Open an issue with:
 
-### Customise Plugin
+   * Device model
+   * Product screenshot or link
+   * Relevant logs
 
-You can now start customising the plugin template to suit your requirements.
+---
 
-- [`src/platform.ts`](./src/platform.ts) - this is where your device setup and discovery should go.
-- [`src/platformAccessory.ts`](./src/platformAccessory.ts) - this is where your accessory control logic should go, you can rename or create multiple instances of this file for each accessory type you need to implement as part of your platform plugin. You can refer to the [developer documentation](https://developers.homebridge.io/) to see what characteristics you need to implement for each service type.
-- [`config.schema.json`](./config.schema.json) - update the config schema to match the config you expect from the user. See the [Plugin Config Schema Documentation](https://developers.homebridge.io/#/config-schema).
+## Contributing
 
-### Versioning Your Plugin
+Issues and pull requests are welcome.
 
-Given a version number `MAJOR`.`MINOR`.`PATCH`, such as `1.4.3`, increment the:
+When reporting bugs, please include:
 
-1. **MAJOR** version when you make breaking changes to your plugin,
-2. **MINOR** version when you add functionality in a backwards compatible manner, and
-3. **PATCH** version when you make backwards compatible bug fixes.
+* Homebridge version
+* Node.js version
+* Device model(s)
+* Relevant logs
+* Steps to reproduce
 
-You can use the `npm version` command to help you with this:
+---
 
-```shell
-# major update / breaking changes
-npm version major
+## Credits
 
-# minor update / new features
-npm version update
+This plugin was developed through direct observation and analysis of the Monster Smart Lighting mobile application and its cloud communications.
 
-# patch / bugfixes
-npm version patch
-```
+Special thanks to:
 
-### Publish Package
+* Homebridge
+* The Homebridge community and contributors
+* Charles Proxy for providing the traffic inspection tooling used during development and protocol analysis
 
-When you are ready to publish your plugin to [npm](https://www.npmjs.com/), make sure you have removed the `private` attribute from the [`package.json`](./package.json) file then run:
+---
 
-```shell
-npm publish
-```
+## Disclaimer
 
-If you are publishing a scoped plugin, i.e. `@username/homebridge-xxx` you will need to add `--access=public` to command the first time you publish.
+This project is not affiliated with or endorsed by Monster Smart Lighting, Ayla Networks, or any associated manufacturer.
 
-#### Publishing Beta Versions
-
-You can publish *beta* versions of your plugin for other users to test before you release it to everyone.
-
-```shell
-# create a new pre-release version (eg. 2.1.0-beta.1)
-npm version prepatch --preid beta
-
-# publish to @beta
-npm publish --tag beta
-```
-
-Users can then install the  *beta* version by appending `@beta` to the install command, for example:
-
-```shell
-sudo npm install -g homebridge-example-plugin@beta
-```
-
-### Best Practices
-
-Consider creating your plugin with the [Homebridge Verified](https://github.com/homebridge/verified) criteria in mind. This will help you to create a plugin that is easy to use and works well with Homebridge.
-You can then submit your plugin to the Homebridge Verified list for review.
-The most up-to-date criteria can be found [here](https://github.com/homebridge/verified#requirements).
-For reference, the current criteria are:
-
-- **General**
-  - The plugin must be of type [dynamic platform](https://developers.homebridge.io/#/#dynamic-platform-template).
-  - The plugin must not offer the same nor less functionality than that of any existing **verified** plugin.
-- **Repo**
-  - The plugin must be published to NPM and the source code available on a GitHub repository, with issues enabled.
-  - A GitHub release should be created for every new version of your plugin, with release notes.
-- **Environment**
-  - The plugin must run on all [supported LTS versions of Node.js](https://github.com/homebridge/homebridge/wiki/How-To-Update-Node.js), at the time of writing this is Node v22 and v24.
-  - The plugin must successfully install and not start unless it is configured.
-  - The plugin must not execute post-install scripts that modify the users' system in any way.
-  - The plugin must not require the user to run Homebridge in a TTY or with non-standard startup parameters, even for initial configuration.
-- **Codebase**
-  - The plugin must implement the [Homebridge Plugin Settings GUI](https://developers.homebridge.io/#/config-schema).
-  - The plugin must not contain any analytics or calls that enable you to track the user.
-  - If the plugin needs to write files to disk (cache, keys, etc.), it must store them inside the Homebridge storage directory.
-  - The plugin must not throw unhandled exceptions, the plugin must catch and log its own errors.
-
-### Useful Links
-
-Note these links are here for help but are not supported/verified by the Homebridge team
-
-- [Custom Characteristics](https://github.com/homebridge/homebridge-plugin-template/issues/20)
+HomeKit is a trademark of Apple Inc.
