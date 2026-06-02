@@ -1,6 +1,6 @@
 {
   "name": "homebridge-monster-smart-lighting",
-  "displayName": "Plugin Name",
+  "displayName": "Homebridge Monster Smart Lighting",
   "type": "module",
   "version": "0.0.1",
   "private": false,
@@ -17,11 +17,19 @@
   },
   "keywords": [
     "homebridge-plugin",
+    "homebridge",
     "homekit",
     "monster",
-    "monster-smart-lighting"
+    "monster-smart-lighting",
+    "lighting",
+    "rgb",
+    "rgbic"
   ],
   "main": "dist/index.js",
+  "homebridge": {
+  	"pluginType": "platform",
+  	"platform": "MonsterSmartLighting"
+  },
   "engines": {
     "node": "^22.10.0 || ^24.0.0",
     "homebridge": "^1.8.0 || ^2.0.0"
