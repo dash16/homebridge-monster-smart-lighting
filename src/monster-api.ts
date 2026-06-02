@@ -1,5 +1,6 @@
 // src/monster-api.ts
 import type { Logger } from 'homebridge';
+import { encodeRgbicPayload, RgbicSwatch } from './rgbic.js';
 
 const MONSTER_BASE_URL = 'https://api.monstergen2.bycopilot.com';
 
@@ -147,7 +148,45 @@ export class MonsterApi {
 			deviceKey: item.property.device_key,
 		}));
 	}
-
+	
+	public async getProperty(dsn: string, propertyName: string): Promise<MonsterProperty | null> {
+		const response = await this.requestAylaJson<AylaPropertyResponse>(
+			`${AYLA_DEVICE_BASE_URL}/apiv1/dsns/${encodeURIComponent(dsn)}/properties/${encodeURIComponent(propertyName)}.json`,
+			{
+				method: 'GET',
+			},
+		);
+	
+		if (!response?.property) {
+			return null;
+		}
+	
+		return {
+			name: response.property.name,
+			baseType: response.property.base_type,
+			readOnly: response.property.read_only,
+			value: response.property.value,
+			key: response.property.key,
+			deviceKey: response.property.device_key,
+		};
+	}
+	
+	public async getLightStateProperties(dsn: string): Promise<MonsterProperty[]> {
+		const propertyNames = [
+			'power',
+			'color_bright',
+			'color_saturation',
+			'color_select',
+			'color_temp',
+		];
+	
+		const properties = await Promise.all(
+			propertyNames.map((propertyName) => this.getProperty(dsn, propertyName)),
+		);
+	
+		return properties.filter((property): property is MonsterProperty => property !== null);
+	}
+	
 	public async setProperty(
 		dsn: string,
 		propertyName: string,
@@ -168,7 +207,29 @@ export class MonsterApi {
 			},
 		);
 	}
-
+	
+	async setRgbicPreset(
+		dsn: string,
+		slot: number,
+		name: string,
+		swatches: RgbicSwatch[],
+		brightness: number,
+	): Promise<void> {
+		const propertyName = `pic${slot.toString().padStart(2, '0')}`;
+	
+		const preset = {
+			n: name,
+			b: brightness,
+			v: '2.1',
+			reset: false,
+			ca_b64: encodeRgbicPayload(swatches),
+		};
+	
+		await this.setProperty(dsn, propertyName, JSON.stringify(preset));
+		await this.setProperty(dsn, 'mode', 'per_ic');
+		await this.setProperty(dsn, 'per_ic_pat', slot);
+	}
+	
 	private async acquireSphereTicket(): Promise<void> {
 		if (!this.monsterAccessToken) {
 			throw new Error('Cannot acquire Sphere partner ticket without a Monster access token.');

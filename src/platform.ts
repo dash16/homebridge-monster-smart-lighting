@@ -8,6 +8,8 @@ import { PLATFORM_NAME, PLUGIN_NAME } from './settings.js';
 interface MonsterPlatformConfig extends PlatformConfig {
 	email?: string;
 	password?: string;
+	rgbicWritebackTest?: boolean;
+	pollIntervalSeconds?: number;
 }
 
 export class MonsterSmartLighting implements DynamicPlatformPlugin {
@@ -88,6 +90,28 @@ export class MonsterSmartLighting implements DynamicPlatformPlugin {
 				}
 
 				this.discoveredCacheUUIDs.push(uuid);
+				
+				if (this.config.rgbicWritebackTest) {
+					this.log.warn('Running temporary RGBIC writeback test for %s. This will overwrite pic04.', device.productName);
+				
+					await this.monsterApi.setRgbicPreset(device.dsn, 4, 'Homebridge Test', [
+						{ type: 'rgb', red: 255, green: 0, blue: 0 },
+						{ type: 'rgb', red: 255, green: 0, blue: 0 },
+						{ type: 'rgb', red: 255, green: 0, blue: 0 },
+				
+						{ type: 'rgb', red: 0, green: 255, blue: 0 },
+						{ type: 'rgb', red: 0, green: 255, blue: 0 },
+						{ type: 'rgb', red: 0, green: 255, blue: 0 },
+				
+						{ type: 'rgb', red: 0, green: 0, blue: 255 },
+						{ type: 'rgb', red: 0, green: 0, blue: 255 },
+						{ type: 'rgb', red: 0, green: 0, blue: 255 },
+				
+						{ type: 'white', value: 100 },
+						{ type: 'white', value: 100 },
+						{ type: 'white', value: 100 },
+					], 100);
+				}
 			}
 
 			for (const [uuid, accessory] of this.accessories) {

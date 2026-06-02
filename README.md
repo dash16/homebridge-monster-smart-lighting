@@ -1,4 +1,7 @@
 # homebridge-monster-smart-lighting
+<p align="center">
+  <img src="homebridge-ui/public/icon.png" width="256" alt="Monster Smart Lighting">
+</p>
 
 ![platform](https://img.shields.io/badge/type-platform-lightgrey)
 [![npm](https://img.shields.io/npm/v/homebridge-monster-smart-lighting.svg)](https://www.npmjs.com/package/homebridge-monster-smart-lighting)

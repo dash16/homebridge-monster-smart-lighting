@@ -20,8 +20,14 @@
         "title": "Password",
         "type": "string",
         "required": true
+      },
+      "pollIntervalSeconds": {
+        "title": "Poll Interval",
+        "type": "integer",
+        "default": 300,
+        "minimum": 60,
+        "description": "How often Homebridge polls Monster cloud state, in seconds. Minimum is 60 seconds."
       }
     }
   }
 }
-
