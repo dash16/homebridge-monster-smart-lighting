@@ -42,10 +42,23 @@ Response:
 ```
 
 ---
+### Step 2: Sphere Token / Session Flow
 
-### Step 2: Ayla Token Exchange
+The Monster access token is used to authenticate with the Sphere backend.
 
-The Monster token is exchanged for an Ayla access token.
+Sphere appears to act as the bridge between Monster identity and Ayla device access.
+
+Observed role:
+
+- validates Monster-authenticated user session
+- exposes or brokers downstream Ayla authentication
+- ties Monster account identity to Ayla user/device access
+
+Further endpoint details should be documented here once captured.
+
+### Step 3: Ayla Token Exchange
+
+The Monster/Sphere token is exchanged for an Ayla access token.
 
 Endpoint:
 
@@ -400,32 +413,9 @@ Current plugin scope targets cloud-based Ayla control.
 
 ---
 
-## MVP Scope
-
-Planned for v0.1.0:
-
-* Authentication
-* Device discovery
-* On/Off
-* Brightness
-* Hue
-* Saturation
-* Color Temperature
-
-Deferred:
-
-* Scene support
-* Music modes
-* DIY modes
-* RGBIC segmentation
-* LAN control
-* Event subscriptions
-* Advanced refresh handling
-
----
-
 ## Open Questions
 
+* Exact Sphere token/session endpoint behavior
 * Monster refresh-token workflow
 * Ayla token refresh workflow
 * Scene selection property mapping

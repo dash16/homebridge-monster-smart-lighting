@@ -102,20 +102,19 @@ export class MonsterApi {
 	private aylaAccessToken: string | null = null;
 	private aylaRefreshToken: string | null = null;
 	private aylaTokenExpiresAt = 0;
-
+	
+	private authRecoveryPromise: Promise<void> | null = null;
+	
 	constructor(
 		private readonly log: Logger,
 		private readonly config: MonsterApiConfig,
 	) {}
 
 	public async getDevices(): Promise<MonsterDevice[]> {
-		await this.ensureAylaAuth();
-
-		const response = await this.requestJson<AylaDeviceResponse[]>(
+		const response = await this.requestAylaJson<AylaDeviceResponse[]>(
 			`${AYLA_DEVICE_BASE_URL}/apiv1/devices.json`,
 			{
 				method: 'GET',
-				headers: this.getAylaHeaders(),
 			},
 		);
 
@@ -133,13 +132,10 @@ export class MonsterApi {
 	}
 
 	public async getProperties(dsn: string): Promise<MonsterProperty[]> {
-		await this.ensureAylaAuth();
-
-		const response = await this.requestJson<AylaPropertyResponse[]>(
+		const response = await this.requestAylaJson<AylaPropertyResponse[]>(
 			`${AYLA_DEVICE_BASE_URL}/apiv1/dsns/${encodeURIComponent(dsn)}/properties.json`,
 			{
 				method: 'GET',
-				headers: this.getAylaHeaders(),
 			},
 		);
 
@@ -158,14 +154,11 @@ export class MonsterApi {
 		propertyName: string,
 		value: string | number | boolean,
 	): Promise<void> {
-		await this.ensureAylaAuth();
-
-		await this.requestJson<unknown>(
+		await this.requestAylaJson<unknown>(
 			`${AYLA_DEVICE_BASE_URL}/apiv1/dsns/${encodeURIComponent(dsn)}/properties/${encodeURIComponent(propertyName)}/datapoints.json`,
 			{
 				method: 'POST',
 				headers: {
-					...this.getAylaHeaders(),
 					'content-type': 'application/json',
 				},
 				body: JSON.stringify({
@@ -317,7 +310,72 @@ export class MonsterApi {
 			'x-ayla-source': 'Mobile',
 		};
 	}
-
+	
+	private async requestAylaJson<T>(url: string, init: RequestInit): Promise<T> {
+		await this.ensureAylaAuth();
+	
+		try {
+			return await this.requestJson<T>(url, {
+				...init,
+				headers: {
+					...this.getAylaHeaders(),
+					...(init.headers ?? {}),
+				},
+			});
+		} catch (error) {
+			if (!this.isAuthError(error)) {
+				throw error;
+			}
+	
+			this.log.warn('Ayla auth token was rejected; re-authenticating and retrying request.');
+	
+			await this.recoverAylaAuth();
+	
+			return await this.requestJson<T>(url, {
+				...init,
+				headers: {
+					...this.getAylaHeaders(),
+					...(init.headers ?? {}),
+				},
+			});
+		}
+	}
+	
+	private async recoverAylaAuth(): Promise<void> {
+		if (!this.authRecoveryPromise) {
+			this.authRecoveryPromise = this.reauthenticateAyla()
+				.finally(() => {
+					this.authRecoveryPromise = null;
+				});
+		}
+	
+		await this.authRecoveryPromise;
+	}
+	
+	private async reauthenticateAyla(): Promise<void> {
+		this.clearAylaAuth();
+	
+		await this.ensureAylaAuth();
+	
+		this.log.info('Monster Smart Lighting cloud authentication recovered successfully.');
+	}
+	
+	private clearAylaAuth(): void {
+		this.spherePartnerTicket = null;
+		this.aylaAccessToken = null;
+		this.aylaRefreshToken = null;
+		this.aylaTokenExpiresAt = 0;
+	}
+	
+	private isAuthError(error: unknown): boolean {
+		if (!(error instanceof Error)) {
+			return false;
+		}
+	
+		return error.message.includes('Request failed: 401')
+			|| error.message.includes('Request failed: 403');
+	}
+	
 	private async requestJson<T>(url: string, init: RequestInit): Promise<T> {
 		const method = init.method ?? 'GET';
 	
@@ -350,6 +408,7 @@ export class MonsterApi {
 	
 		return JSON.parse(responseText) as T;
 	}
+	
 	private redactForLog(value: string): string {
 		return value
 			.replace(/"password":"[^"]*"/g, '"password":"[REDACTED]"')
