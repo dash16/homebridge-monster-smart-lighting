@@ -2,32 +2,44 @@
   "pluginAlias": "MonsterSmartLighting",
   "pluginType": "platform",
   "singular": true,
-  "strictValidation": false,
+  "customUi": true,
   "schema": {
-    "type": "object",
-    "properties": {
-      "name": {
-        "title": "Name",
-        "type": "string",
-        "default": "Monster Smart Lighting"
-      },
-      "email": {
-        "title": "Email",
-        "type": "string",
-        "required": true
-      },
-      "password": {
-        "title": "Password",
-        "type": "string",
-        "required": true
-      },
-      "pollIntervalSeconds": {
-        "title": "Poll Interval",
-        "type": "integer",
-        "default": 300,
-        "minimum": 60,
-        "description": "How often Homebridge polls Monster cloud state, in seconds. Minimum is 60 seconds."
-      }
-    }
-  }
+		"type": "object",
+		"properties": {
+			"name": {
+			"title": "Plugin Name",
+			"type": "string",
+			"default": "Monster Smart Lighting",
+			"description": "Display name used by Homebridge for this platform."
+			},
+			"email": {
+			"title": "Monster Account Email",
+			"type": "string",
+			"format": "email",
+			"required": true,
+			"description": "Email address used to sign in to the Monster Smart Lighting app."
+			},
+			"password": {
+			"title": "Monster Account Password",
+			"type": "string",
+			"format": "password",
+			"required": true,
+			"description": "Password used to sign in to the Monster Smart Lighting app."
+			},
+			"pollIntervalSeconds": {
+			"title": "Polling Interval",
+			"type": "integer",
+			"default": 300,
+			"minimum": 60,
+			"maximum": 3600,
+			"description": "How often Homebridge checks Monster cloud state, in seconds. The default is 300 seconds. Lower values may update HomeKit faster but increase cloud traffic."
+			},
+			"debug": {
+			"title": "Debug Logging",
+			"type": "boolean",
+			"default": false,
+			"description": "Enable extra diagnostic logging for troubleshooting. Leave disabled for normal use."
+			}
+		}
+	}
 }

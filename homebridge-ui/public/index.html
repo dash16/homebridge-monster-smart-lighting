@@ -1,0 +1,102 @@
+<!-- homebridge-ui/public/index.html -->
+
+<div class="text-center mb-3">
+	<img
+		src="icon.png"
+		alt="Monster Smart Lighting Icon"
+		style="width:96px;height:96px;border-radius:5px;"
+	/>
+</div>
+
+<div class="card mb-3">
+	<div class="card-body">
+		<h3 class="card-title">Monster Smart Lighting</h3>
+		<p class="card-text">
+			Enter your Monster Smart Lighting account credentials.
+		</p>
+	</div>
+</div>
+
+<div class="card mb-3">
+	<div class="card-body">
+		<h5 class="card-title">Monster Cloud Credentials</h5>
+
+		<div class="mb-3">
+			<label for="monsterEmail" class="form-label">Email</label>
+			<input type="email" id="monsterEmail" class="form-control" autocomplete="username">
+		</div>
+
+		<div class="mb-3">
+			<label for="monsterPassword" class="form-label">Password</label>
+			<input type="password" id="monsterPassword" class="form-control" autocomplete="current-password">
+		</div>
+	</div>
+</div>
+
+<div class="card mb-3">
+	<div class="card-body">
+		<h5 class="card-title">Plugin Settings</h5>
+
+		<div class="mb-3">
+			<label for="monsterName" class="form-label">Plugin Name</label>
+			<input type="text" id="monsterName" class="form-control">
+			<div class="form-text">Display name used by Homebridge for this platform.</div>
+		</div>
+
+		<div class="mb-3">
+			<label for="monsterPollIntervalSeconds" class="form-label">Polling Interval</label>
+			<input type="number" id="monsterPollIntervalSeconds" class="form-control" min="60" max="3600" step="1">
+			<div class="form-text">
+				How often Homebridge checks Monster cloud state, in seconds. Default is 300.
+			</div>
+		</div>
+
+		<div class="form-check mb-3">
+			<input type="checkbox" id="monsterDebug" class="form-check-input">
+			<label for="monsterDebug" class="form-check-label">Debug Logging</label>
+			<div class="form-text">Enable extra diagnostic logging for troubleshooting.</div>
+		</div>
+	</div>
+</div>
+
+<script>
+homebridge.addEventListener('ready', async () => {
+	const nameInput = document.getElementById('monsterName');
+	const emailInput = document.getElementById('monsterEmail');
+	const passwordInput = document.getElementById('monsterPassword');
+	const pollIntervalInput = document.getElementById('monsterPollIntervalSeconds');
+	const debugInput = document.getElementById('monsterDebug');
+
+	let pluginConfig = await homebridge.getPluginConfig();
+	let cfg = pluginConfig[0] || {};
+
+	async function updateConfig(partial) {
+		cfg = { ...cfg, ...partial };
+		pluginConfig = [cfg];
+		await homebridge.updatePluginConfig(pluginConfig);
+	}
+
+	nameInput.value = cfg.name || 'Monster Smart Lighting';
+	emailInput.value = cfg.email || '';
+	passwordInput.value = cfg.password || '';
+	pollIntervalInput.value = cfg.pollIntervalSeconds || 300;
+	debugInput.checked = !!cfg.debug;
+
+	async function syncConfigFromUi() {
+		await updateConfig({
+			platform: 'MonsterSmartLighting',
+			name: nameInput.value || 'Monster Smart Lighting',
+			email: emailInput.value.trim(),
+			password: passwordInput.value,
+			pollIntervalSeconds: Number(pollIntervalInput.value || 300),
+			debug: debugInput.checked,
+		});
+	}
+
+	nameInput.addEventListener('change', syncConfigFromUi);
+	emailInput.addEventListener('change', syncConfigFromUi);
+	passwordInput.addEventListener('change', syncConfigFromUi);
+	pollIntervalInput.addEventListener('change', syncConfigFromUi);
+	debugInput.addEventListener('change', syncConfigFromUi);
+});
+</script>

@@ -1,5 +1,32 @@
 # Changelog
 
+## v0.1.2 - Config/UI Polish
+
+**Release Date:** 2026-06-03
+
+### Added
+
+- Added custom Homebridge UI framework for plugin configuration.
+- Added masked password input for Monster account credentials.
+
+### Changed
+
+- Improved `config.schema.json` labels and descriptions.
+
+## v0.1.1 - Polish Pass
+
+**Release Date:** 2026-06-03
+
+### Changed
+
+* Tweaked polling behavior and defaults to reduce routine log chatter.
+* Promoted key accessory state changes from debug to info logging so standard users can see when devices change state.
+* Added the initial framework for future RGBIC capability support.
+
+### Fixed
+
+* Fixed duplicate color writes when HomeKit sends Hue and Saturation updates separately for a single color change.
+
 ## v0.1.0 - Initial MVP Release
 
 **Release Date:** 2026-06-02
