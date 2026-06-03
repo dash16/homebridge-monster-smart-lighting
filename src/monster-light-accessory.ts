@@ -23,7 +23,7 @@ const MIN_POLL_INTERVAL_MS = 60_000;
 
 export class MonsterLightAccessory {
 	private service: Service;
-
+	
 	private state: MonsterLightState = {
 		On: false,
 		Brightness: 100,
@@ -32,6 +32,7 @@ export class MonsterLightAccessory {
 		ColorTemperature: HOMEKIT_MIRED_MIN,
 	};
 	private pollTimer: NodeJS.Timeout | null = null;
+	private colorUpdateTimer: NodeJS.Timeout | null = null;
 	private isRefreshing = false;
 	private isSyncingFromCloud = false;
 	private readonly device: MonsterDevice;
@@ -210,11 +211,12 @@ export class MonsterLightAccessory {
 		if (this.isSyncingFromCloud) {
 			return;
 		}
+	
 		const hue = Number(value);
-
+	
 		this.state.Hue = hue;
-		await this.setRgbColorFromState();
-
+		this.scheduleRgbColorUpdate();
+	
 		this.platform.log.debug(`Set ${this.device.productName} Hue ->`, hue);
 	}
 
@@ -226,13 +228,12 @@ export class MonsterLightAccessory {
 		if (this.isSyncingFromCloud) {
 			return;
 		}
+	
 		const saturation = Number(value);
-
+	
 		this.state.Saturation = saturation;
-
-		await this.monsterApi.setProperty(this.device.dsn, 'color_saturation', saturation);
-		await this.setRgbColorFromState();
-
+		this.scheduleRgbColorUpdate();
+	
 		this.platform.log.debug(`Set ${this.device.productName} Saturation ->`, saturation);
 	}
 
@@ -262,18 +263,32 @@ export class MonsterLightAccessory {
 	private async getColorTemperature(): Promise<CharacteristicValue> {
 		return this.state.ColorTemperature;
 	}
-
+	
+	private scheduleRgbColorUpdate(): void {
+		if (this.colorUpdateTimer) {
+			clearTimeout(this.colorUpdateTimer);
+		}
+	
+		this.colorUpdateTimer = setTimeout(() => {
+			this.colorUpdateTimer = null;
+			void this.setRgbColorFromState();
+		}, 150);
+	
+		this.colorUpdateTimer.unref();
+	}
+	
 	private async setRgbColorFromState(): Promise<void> {
 		const rgbInt = this.hsvToRgbInt(this.state.Hue, this.state.Saturation, this.state.Brightness);
-		
+	
 		this.platform.log.info(
 			'Setting %s color (H:%d S:%d)',
 			this.device.productName,
 			this.state.Hue,
 			this.state.Saturation,
 		);
-		
+	
 		await this.monsterApi.setProperty(this.device.dsn, 'mode', 'color');
+		await this.monsterApi.setProperty(this.device.dsn, 'color_saturation', this.state.Saturation);
 		await this.monsterApi.setProperty(this.device.dsn, 'color_select', rgbInt);
 	}
 
