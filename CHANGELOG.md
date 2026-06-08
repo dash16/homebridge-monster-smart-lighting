@@ -1,5 +1,30 @@
 # Changelog
 
+# Changelog
+
+## v0.1.3
+
+**Release Date:** 2026-06-08
+
+### Added
+
+- Added internal preset discovery framework for Monster lighting devices.
+- Added support for enumerating Static, Dynamic, DIY, Music, and RGBIC presets.
+- Added preset parsing models for scene metadata, colors, speed, and music sensitivity.
+- Added generic preset activation helpers for all supported preset families.
+- Added RGBIC preset retrieval and activation APIs.
+
+### Changed
+
+- Refactored RGBIC preset activation to use shared activation logic.
+- Consolidated preset handling into a unified API foundation for future scene and RGBIC features.
+
+### Notes
+
+- This release focuses on internal infrastructure and reverse-engineering progress.
+- No new HomeKit controls are exposed in this release.
+- Lays groundwork for future RGBIC segment control, scene selection, DIY modes, and music-reactive effects.
+
 ## v0.1.2 - Config/UI Polish
 
 **Release Date:** 2026-06-03
