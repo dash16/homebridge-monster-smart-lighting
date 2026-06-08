@@ -1,6 +1,6 @@
 // src/monster-api.ts
 import type { Logger } from 'homebridge';
-import { encodeRgbicPayload, RgbicSwatch } from './rgbic.js';
+import { encodeRgbicPayload, type RgbicSwatch } from './rgbic.js';
 
 const MONSTER_BASE_URL = 'https://api.monstergen2.bycopilot.com';
 
@@ -35,6 +35,34 @@ export interface MonsterDevice {
 	lanEnabled: boolean;
 	connectionStatus: string | null;
 	key: number;
+}
+export type MonsterPresetFamily = 'static' | 'dynamic' | 'diy' | 'music' | 'rgbic';
+
+export interface MonsterPreset {
+	family: MonsterPresetFamily;
+	slot: number;
+	propertyName: string;
+	name: string;
+	brightness: number;
+	version: string;
+	reset: boolean;
+	speed?: number;
+	musicSensitivity?: number;
+	colors?: Array<{
+		mode?: string;
+		color: number;
+		saturation: number;
+	}>;
+}
+
+export interface RgbicPreset {
+	slot: number;
+	propertyName: string;
+	name: string;
+	brightness: number;
+	version: string;
+	reset: boolean;
+	caB64: string;
 }
 
 export interface MonsterProperty {
@@ -104,6 +132,13 @@ export class MonsterApi {
 	private aylaTokenExpiresAt = 0;
 	
 	private authRecoveryPromise: Promise<void> | null = null;
+	
+	private readonly presetFamilies = {
+		static: { prefix: 'st', maxSlot: 15, mode: 'scene', selector: 'st_pat' },
+		dynamic: { prefix: 'dyn', maxSlot: 15, mode: 'dynamic', selector: 'dyn_pat' },
+		diy: { prefix: 'diy', maxSlot: 15, mode: 'DIY', selector: 'diy_pat' },
+		music: { prefix: 'mus', maxSlot: 5, mode: 'music', selector: 'mus_pat' },
+	} as const;
 	
 	constructor(
 		private readonly log: Logger,
@@ -208,13 +243,186 @@ export class MonsterApi {
 		);
 	}
 	
-	async setRgbicPreset(
+	public async getPresets(dsn: string, family: Exclude<MonsterPresetFamily, 'rgbic'>): Promise<MonsterPreset[]> {
+		const properties = await this.getProperties(dsn);
+		const config = this.presetFamilies[family];
+	
+		return properties
+			.filter((property) => new RegExp(`^${config.prefix}\\d{2}$`).test(property.name))
+			.map((property) => this.parsePreset(property, family))
+			.filter((preset): preset is MonsterPreset => preset !== null)
+			.sort((a, b) => a.slot - b.slot);
+	}
+	
+	public async getStaticPresets(dsn: string): Promise<MonsterPreset[]> {
+		return this.getPresets(dsn, 'static');
+	}
+	
+	public async getDynamicPresets(dsn: string): Promise<MonsterPreset[]> {
+		return this.getPresets(dsn, 'dynamic');
+	}
+	
+	public async getDiyPresets(dsn: string): Promise<MonsterPreset[]> {
+		return this.getPresets(dsn, 'diy');
+	}
+	
+	public async getMusicPresets(dsn: string): Promise<MonsterPreset[]> {
+		return this.getPresets(dsn, 'music');
+	}
+	
+	public async getRgbicPresets(dsn: string): Promise<RgbicPreset[]> {
+		const properties = await this.getProperties(dsn);
+	
+		return properties
+			.filter((property) => /^pic\d{2}$/.test(property.name))
+			.map((property) => this.parseRgbicPreset(property))
+			.filter((preset): preset is RgbicPreset => preset !== null)
+			.sort((a, b) => a.slot - b.slot);
+	}
+	
+	private parsePreset(property: MonsterProperty, family: Exclude<MonsterPresetFamily, 'rgbic'>): MonsterPreset | null {
+		if (typeof property.value !== 'string' || !property.value.trim()) {
+			return null;
+		}
+
+		try {
+			const parsed = JSON.parse(property.value) as {
+			n?: unknown;
+			b?: unknown;
+			v?: unknown;
+			reset?: unknown;
+			s?: unknown;
+			m?: unknown;
+			ca?: unknown;
+		};
+
+			const colors = Array.isArray(parsed.ca)
+				? parsed.ca
+					.map((entry) => {
+						if (typeof entry !== 'object' || entry === null) {
+							return null;
+						}
+			
+						const colorEntry = entry as {
+							m?: unknown;
+							c?: unknown;
+							cs?: unknown;
+						};
+			
+						if (typeof colorEntry.c !== 'number') {
+							return null;
+						}
+			
+						const parsedColor: {
+							mode?: string;
+							color: number;
+							saturation: number;
+						} = {
+							color: colorEntry.c,
+							saturation: typeof colorEntry.cs === 'number' ? colorEntry.cs : 100,
+						};
+			
+						if (typeof colorEntry.m === 'string') {
+							parsedColor.mode = colorEntry.m;
+						}
+			
+						return parsedColor;
+					})
+					.filter((entry): entry is {
+						mode?: string;
+						color: number;
+						saturation: number;
+					} => entry !== null)
+				: undefined;
+
+			return {
+				family,
+				slot: Number(property.name.slice(this.presetFamilies[family].prefix.length)),
+				propertyName: property.name,
+				name: typeof parsed.n === 'string' ? parsed.n : property.name,
+				brightness: typeof parsed.b === 'number' ? parsed.b : 100,
+				version: typeof parsed.v === 'string' ? parsed.v : '2.0',
+				reset: typeof parsed.reset === 'boolean' ? parsed.reset : false,
+				speed: typeof parsed.s === 'number' ? parsed.s : undefined,
+				musicSensitivity: typeof parsed.m === 'number' ? parsed.m : undefined,
+				colors,
+			};
+		} catch {
+			this.log.warn('Failed to parse preset property %s.', property.name);
+			return null;
+		}
+	}
+	
+	private parseRgbicPreset(property: MonsterProperty): RgbicPreset | null {
+		if (typeof property.value !== 'string' || !property.value.trim()) {
+			return null;
+		}
+	
+		try {
+			const parsed = JSON.parse(property.value) as {
+				n?: unknown;
+				b?: unknown;
+				v?: unknown;
+				reset?: unknown;
+				ca_b64?: unknown;
+			};
+	
+			const slot = Number(property.name.slice(3));
+	
+			return {
+				slot,
+				propertyName: property.name,
+				name: typeof parsed.n === 'string' ? parsed.n : property.name,
+				brightness: typeof parsed.b === 'number' ? parsed.b : 100,
+				version: typeof parsed.v === 'string' ? parsed.v : '2.1',
+				reset: typeof parsed.reset === 'boolean' ? parsed.reset : false,
+				caB64: typeof parsed.ca_b64 === 'string' ? parsed.ca_b64 : '',
+			};
+		} catch {
+			this.log.warn('Failed to parse RGBIC preset property %s.', property.name);
+			return null;
+		}
+	}
+	
+	public async activatePreset(
+		dsn: string,
+		family: Exclude<MonsterPresetFamily, 'rgbic'>,
+		slot: number,
+	): Promise<void> {
+		const config = this.presetFamilies[family];
+	
+		if (!Number.isInteger(slot) || slot < 0 || slot > config.maxSlot) {
+			throw new Error(`Invalid ${family} preset slot: ${slot}`);
+		}
+	
+		this.log.info('Activating %s preset slot %d.', family, slot);
+	
+		await this.setProperty(dsn, 'mode', config.mode);
+		await this.setProperty(dsn, config.selector, slot);
+	}
+	
+	public async activateRgbicPreset(dsn: string, slot: number): Promise<void> {
+		if (!Number.isInteger(slot) || slot < 0 || slot > 4) {
+			throw new Error(`Invalid RGBIC preset slot: ${slot}`);
+		}
+	
+		this.log.info('Activating RGBIC preset slot %d.', slot);
+	
+		await this.setProperty(dsn, 'mode', 'per_ic');
+		await this.setProperty(dsn, 'per_ic_pat', slot);
+	}
+	
+	public async setRgbicPreset(
 		dsn: string,
 		slot: number,
 		name: string,
 		swatches: RgbicSwatch[],
 		brightness: number,
 	): Promise<void> {
+		if (!Number.isInteger(slot) || slot < 0 || slot > 4) {
+			throw new Error(`Invalid RGBIC preset slot: ${slot}`);
+		}
+	
 		const propertyName = `pic${slot.toString().padStart(2, '0')}`;
 	
 		const preset = {
@@ -226,8 +434,7 @@ export class MonsterApi {
 		};
 	
 		await this.setProperty(dsn, propertyName, JSON.stringify(preset));
-		await this.setProperty(dsn, 'mode', 'per_ic');
-		await this.setProperty(dsn, 'per_ic_pat', slot);
+		await this.activateRgbicPreset(dsn, slot);
 	}
 	
 	private async acquireSphereTicket(): Promise<void> {
