@@ -169,11 +169,19 @@ export class MonsterLightAccessory {
 		if (this.isSyncingFromCloud) {
 			return;
 		}
+	
 		const on = Boolean(value);
-
+	
 		await this.monsterApi.setProperty(this.device.dsn, 'power', on ? 1 : 0);
+	
+		if (on) {
+			await this.monsterApi.setProperty(this.device.dsn, 'mode', 'color');
+		}
+	
 		this.state.On = on;
-
+	
+		await this.platform.refreshSceneStates(this.device.dsn);
+	
 		this.platform.log.info(
 			'Setting %s power %s',
 			this.device.productName,

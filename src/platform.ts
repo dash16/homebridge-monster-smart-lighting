@@ -3,12 +3,21 @@ import type { API, Characteristic, DynamicPlatformPlugin, Logging, PlatformAcces
 
 import { MonsterApi } from './monster-api.js';
 import { MonsterLightAccessory } from './monster-light-accessory.js';
+import { MonsterSceneAccessory } from './monster-scene-accessory.js';
 import { PLATFORM_NAME, PLUGIN_NAME } from './settings.js';
 
 interface MonsterPlatformConfig extends PlatformConfig {
 	email?: string;
 	password?: string;
 	pollIntervalSeconds?: number;
+	sceneCategories?: {
+		static?: boolean;
+		dynamic?: boolean;
+		custom?: boolean;
+		diy?: boolean;
+		music?: boolean;
+	};
+	debug?: boolean;
 }
 
 export class MonsterSmartLighting implements DynamicPlatformPlugin {
@@ -19,7 +28,23 @@ export class MonsterSmartLighting implements DynamicPlatformPlugin {
 	public readonly discoveredCacheUUIDs: string[] = [];
 
 	private readonly monsterApi: MonsterApi | null = null;
-
+	
+	public readonly sceneAccessories: Map<string, MonsterSceneAccessory[]> = new Map();
+	
+	public registerSceneAccessory(dsn: string, sceneAccessory: MonsterSceneAccessory): void {
+		const existing = this.sceneAccessories.get(dsn) ?? [];
+		existing.push(sceneAccessory);
+		this.sceneAccessories.set(dsn, existing);
+	}
+	
+	public async refreshSceneStates(dsn: string): Promise<void> {
+		const sceneAccessories = this.sceneAccessories.get(dsn) ?? [];
+	
+		await Promise.all(
+			sceneAccessories.map((sceneAccessory) => sceneAccessory.refreshState()),
+		);
+	}
+	
 	constructor(
 		public readonly log: Logging,
 		public readonly config: MonsterPlatformConfig,
@@ -40,7 +65,24 @@ export class MonsterSmartLighting implements DynamicPlatformPlugin {
 		} else {
 			this.log.warn('Monster Smart Lighting email/password are not configured. No devices will be discovered.');
 		}
-
+		
+		const sceneCategories = {
+			static: this.config.sceneCategories?.static ?? false,
+			dynamic: this.config.sceneCategories?.dynamic ?? false,
+			custom: this.config.sceneCategories?.custom ?? false,
+			diy: this.config.sceneCategories?.diy ?? false,
+			music: this.config.sceneCategories?.music ?? false,
+		};
+		
+		this.log.debug(
+			'Scene accessory categories: static=%s dynamic=%s custom=%s diy=%s music=%s',
+			sceneCategories.static,
+			sceneCategories.dynamic,
+			sceneCategories.custom,
+			sceneCategories.diy,
+			sceneCategories.music,
+		);
+		
 		this.log.info('Finished initializing platform:', this.config.name);
 
 		this.api.on('didFinishLaunching', () => {
@@ -69,7 +111,7 @@ export class MonsterSmartLighting implements DynamicPlatformPlugin {
 			for (const device of devices) {
 				const uuid = this.api.hap.uuid.generate(device.dsn);
 				const existingAccessory = this.accessories.get(uuid);
-
+												
 				if (existingAccessory) {
 					this.log.info('Restoring existing accessory from cache:', existingAccessory.displayName);
 
@@ -87,7 +129,94 @@ export class MonsterSmartLighting implements DynamicPlatformPlugin {
 
 					this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
 				}
-
+				
+				const scenesEnabled = Object.values(this.config.sceneCategories ?? {}).some(Boolean);
+				
+				if (scenesEnabled) {
+					const activeSceneState = await this.monsterApi.getActiveSceneState(device.dsn);
+				
+					this.log.debug(
+						'Active scene state for %s: mode=%s static=%s dynamic=%s diy=%s music=%s',
+						device.productName,
+						activeSceneState.mode,
+						activeSceneState.staticSlot ?? 'none',
+						activeSceneState.dynamicSlot ?? 'none',
+						activeSceneState.diySlot ?? 'none',
+						activeSceneState.musicSlot ?? 'none',
+					);
+				}
+				
+				if (this.config.sceneCategories?.diy) {
+					const diyPresets = await this.monsterApi.getDiyPresets(device.dsn);
+				
+					for (const preset of diyPresets) {
+						const sceneUuid = this.api.hap.uuid.generate(
+							`${device.dsn}-diy-${preset.slot}`,
+						);
+				
+						const sceneName = `${device.productName} ${preset.name}`;
+				
+						const existingSceneAccessory =
+							this.accessories.get(sceneUuid);
+				
+						if (existingSceneAccessory) {
+							this.log.info(
+								'Restoring existing scene accessory from cache:',
+								existingSceneAccessory.displayName,
+							);
+				
+							existingSceneAccessory.context.device = device;
+							existingSceneAccessory.context.preset = preset;
+				
+							this.api.updatePlatformAccessories([
+								existingSceneAccessory,
+							]);
+				
+							new MonsterSceneAccessory(
+								this,
+								existingSceneAccessory,
+								this.monsterApi,
+								device.dsn,
+								'diy',
+								preset.slot,
+								sceneName,
+							);
+						} else {
+							this.log.info(
+								'Adding new scene accessory:',
+								sceneName,
+							);
+				
+							const sceneAccessory =
+								new this.api.platformAccessory(
+									sceneName,
+									sceneUuid,
+								);
+				
+							sceneAccessory.context.device = device;
+							sceneAccessory.context.preset = preset;
+				
+							new MonsterSceneAccessory(
+								this,
+								sceneAccessory,
+								this.monsterApi,
+								device.dsn,
+								'diy',
+								preset.slot,
+								sceneName,
+							);
+				
+							this.api.registerPlatformAccessories(
+								PLUGIN_NAME,
+								PLATFORM_NAME,
+								[sceneAccessory],
+							);
+						}
+				
+						this.discoveredCacheUUIDs.push(sceneUuid);
+					}
+				}
+				
 				this.discoveredCacheUUIDs.push(uuid);
 			}
 

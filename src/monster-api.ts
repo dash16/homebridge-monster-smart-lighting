@@ -74,6 +74,14 @@ export interface MonsterProperty {
 	deviceKey: number;
 }
 
+export interface MonsterActiveSceneState {
+	mode: string | null;
+	staticSlot?: number;
+	dynamicSlot?: number;
+	diySlot?: number;
+	musicSlot?: number;
+}
+
 interface MonsterLoginResponse {
 	tokenType: string;
 	accessToken: string;
@@ -278,6 +286,26 @@ export class MonsterApi {
 			.map((property) => this.parseRgbicPreset(property))
 			.filter((preset): preset is RgbicPreset => preset !== null)
 			.sort((a, b) => a.slot - b.slot);
+	}
+	
+	public async getActiveSceneState(dsn: string): Promise<MonsterActiveSceneState> {
+		const properties = await Promise.all([
+			this.getProperty(dsn, 'mode'),
+			this.getProperty(dsn, 'st_pat'),
+			this.getProperty(dsn, 'dyn_pat'),
+			this.getProperty(dsn, 'diy_pat'),
+			this.getProperty(dsn, 'mus_pat'),
+		]);
+	
+		const [mode, staticSlot, dynamicSlot, diySlot, musicSlot] = properties;
+	
+		return {
+			mode: typeof mode?.value === 'string' ? mode.value : null,
+			staticSlot: typeof staticSlot?.value === 'number' ? staticSlot.value : undefined,
+			dynamicSlot: typeof dynamicSlot?.value === 'number' ? dynamicSlot.value : undefined,
+			diySlot: typeof diySlot?.value === 'number' ? diySlot.value : undefined,
+			musicSlot: typeof musicSlot?.value === 'number' ? musicSlot.value : undefined,
+		};
 	}
 	
 	private parsePreset(property: MonsterProperty, family: Exclude<MonsterPresetFamily, 'rgbic'>): MonsterPreset | null {

@@ -1,6 +1,27 @@
 # Changelog
 
-# Changelog
+## v0.2.0
+
+**Release Date:** 2026-06-09
+
+### Added
+
+- DIY scene discovery and activation support
+- HomeKit switch accessories for DIY scenes
+- Active scene state detection via Ayla properties
+- Scene category configuration framework
+- Scene accessory state synchronization
+
+### Changed
+
+- Main light accessory now exits active scene mode when manually controlled
+- Scene accessory state refreshes when scenes are activated or deactivated
+
+### Known Limitations
+
+- Some discovered scenes may not be compatible with all Monster devices
+- Static, Dynamic, Music, and Custom scene categories are not yet implemented
+
 
 ## v0.1.3
 

@@ -4,42 +4,67 @@
   "singular": true,
   "customUi": true,
   "schema": {
-		"type": "object",
-		"properties": {
-			"name": {
-			"title": "Plugin Name",
-			"type": "string",
-			"default": "Monster Smart Lighting",
-			"description": "Display name used by Homebridge for this platform."
-			},
-			"email": {
-			"title": "Monster Account Email",
-			"type": "string",
-			"format": "email",
-			"required": true,
-			"description": "Email address used to sign in to the Monster Smart Lighting app."
-			},
-			"password": {
-			"title": "Monster Account Password",
-			"type": "string",
-			"format": "password",
-			"required": true,
-			"description": "Password used to sign in to the Monster Smart Lighting app."
-			},
-			"pollIntervalSeconds": {
-			"title": "Polling Interval",
-			"type": "integer",
-			"default": 300,
-			"minimum": 60,
-			"maximum": 3600,
-			"description": "How often Homebridge checks Monster cloud state, in seconds. The default is 300 seconds. Lower values may update HomeKit faster but increase cloud traffic."
-			},
-			"debug": {
-			"title": "Debug Logging",
-			"type": "boolean",
-			"default": false,
-			"description": "Enable extra diagnostic logging for troubleshooting. Leave disabled for normal use."
-			}
-		}
-	}
+    "type": "object",
+    "properties": {
+      "name": {
+        "title": "Plugin Name",
+        "type": "string",
+        "default": "Monster Smart Lighting",
+        "description": "Display name used by Homebridge for this platform."
+      },
+      "email": {
+        "title": "Monster Account Email",
+        "type": "string",
+        "format": "email",
+        "required": true,
+        "description": "Email address used to sign in to the Monster Smart Lighting app."
+      },
+      "password": {
+        "title": "Monster Account Password",
+        "type": "string",
+        "format": "password",
+        "required": true,
+        "description": "Password used to sign in to the Monster Smart Lighting app."
+      },
+      "pollIntervalSeconds": {
+        "title": "Polling Interval",
+        "type": "integer",
+        "default": 300,
+        "minimum": 60,
+        "maximum": 3600,
+        "description": "How often Homebridge checks Monster cloud state, in seconds. The default is 300 seconds. Lower values may update HomeKit faster but increase cloud traffic."
+      },
+      "sceneCategories": {
+        "title": "Scene Accessories",
+        "type": "object",
+        "description": "Choose which Monster scene categories to expose as HomeKit switch accessories. All scene categories are disabled by default.",
+        "properties": {
+          "diy": {
+            "title": "DIY Scenes",
+            "type": "boolean",
+            "default": false,
+            "description": "Expose saved DIY scenes as HomeKit switch accessories."
+          },
+          "dynamic": {
+            "title": "Dynamic Scenes",
+            "type": "boolean",
+            "default": false,
+            "description": "Expose built-in dynamic scenes as HomeKit switch accessories."
+          },
+          "music": {
+            "title": "Music Scenes",
+            "type": "boolean",
+            "default": false,
+            "description": "Expose music-reactive scenes as HomeKit switch accessories."
+          }
+        }
+      },
+      "debug": {
+        "title": "Debug Logging",
+        "type": "boolean",
+        "default": false,
+        "description": "Enable extra diagnostic logging for troubleshooting. Leave disabled for normal use."
+      }
+    }
+  }
 }
