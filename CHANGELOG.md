@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.2.1
+
+**Release Date:** 2026-06-09
+
+### Added
+
+- Added compatibility fallback profile for future authentication changes
+
+### Changed
+
+- Replaced hard-coded iPhone client identity with a Homebridge-specific authentication profile
+- Reduced dependency on Monster mobile app metadata during cloud authentication
+
 ## v0.2.0
 
 **Release Date:** 2026-06-09
