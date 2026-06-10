@@ -16,9 +16,38 @@ const AYLA_APP_SECRET = 'RGBIC-O7v7HvMh9OjQBz8eA6tL6Pprp8U';
 
 const TOKEN_EXPIRY_BUFFER_MS = 60_000;
 
-const MONSTER_USER_AGENT = 'Runner/2.0.157 (com.xtreme.monstersmartlighting; build:157; iOS 26.5.0) Alamofire/5.11.0';
-const MONSTER_SDK_VERSION = '6.0.8';
-const MONSTER_DEVICE_ID = '62B62449-4052-4075-90C9-9427F31F1F51';
+const AUTH_PROFILES = [
+	{
+	  name: 'Homebridge (mobile-compatible)',
+	  monsterUserAgent: 'homebridge-monster-smart-lighting (Homebridge; Node.js)',
+	  monsterSdkVersion: 'homebridge',
+	  aylaUserAgent: 'homebridge-monster-smart-lighting (Homebridge; Node.js)',
+	  aylaSource: 'Mobile',
+	  deviceDetails: {
+	    osType: 'ANDROID',
+	    deviceId: 'homebridge-monster-smart-lighting',
+	    applicationVersion: 'homebridge',
+	    deviceType: 'PC',
+	    deviceModel: 'Homebridge',
+	    osVersion: process.version,
+	  },
+	},
+	{
+		name: 'Monster iOS compatibility',
+		monsterUserAgent: 'Runner/2.0.157 (com.xtreme.monstersmartlighting; build:157; iOS 26.5.0) Alamofire/5.11.0',
+		monsterSdkVersion: '6.0.8',
+		aylaUserAgent: 'Runner/2.0.157(157) SDK: 9.0.8 (iPhone; iOS 26.5; Scale/3.00)',
+		aylaSource: 'Mobile',
+		deviceDetails: {
+			osType: 'IOS',
+			deviceId: '62B62449-4052-4075-90C9-9427F31F1F51',
+			applicationVersion: '157',
+			deviceType: 'PHONE',
+			deviceModel: 'iPhone18,1',
+			osVersion: '26.5',
+		},
+	},
+] as const;
 
 export interface MonsterApiConfig {
 	email: string;
@@ -82,6 +111,8 @@ export interface MonsterActiveSceneState {
 	musicSlot?: number;
 }
 
+type AuthProfile = (typeof AUTH_PROFILES)[number];
+
 interface MonsterLoginResponse {
 	tokenType: string;
 	accessToken: string;
@@ -134,6 +165,7 @@ export class MonsterApi {
 	private monsterRefreshToken: string | null = null;
 	private monsterTokenExpiresAt = 0;
 	private spherePartnerTicket: string | null = null;
+	private authProfile: AuthProfile | null = null;
 
 	private aylaAccessToken: string | null = null;
 	private aylaRefreshToken: string | null = null;
@@ -469,6 +501,9 @@ export class MonsterApi {
 		if (!this.monsterAccessToken) {
 			throw new Error('Cannot acquire Sphere partner ticket without a Monster access token.');
 		}
+		if (!this.authProfile) {
+			throw new Error('Cannot acquire Sphere partner ticket without an authentication profile.');
+		}
 
 		this.log.info('Acquiring Sphere partner ticket...');
 
@@ -480,8 +515,8 @@ export class MonsterApi {
 					'accept': '*/*',
 					'authorization': `Bearer ${this.monsterAccessToken}`,
 					'content-type': 'application/json',
-					'user-agent': MONSTER_USER_AGENT,
-					'x-copilot-sdk-version': MONSTER_SDK_VERSION,
+					'user-agent': this.authProfile.monsterUserAgent,
+					'x-copilot-sdk-version': this.authProfile.monsterSdkVersion,
 				},
 				body: JSON.stringify({
 					applicationId: MONSTER_APPLICATION_ID,
@@ -505,9 +540,29 @@ export class MonsterApi {
 			return;
 		}
 
-		await this.loginToMonster();
-		await this.acquireSphereTicket();
-		await this.signInToAyla();
+		try {
+			await this.loginToMonster();
+			await this.acquireSphereTicket();
+			await this.signInToAyla();
+		} catch (error) {
+			if (
+				this.authProfile === AUTH_PROFILES[0]
+				&& this.shouldTryNextAuthProfile(error)
+				&& AUTH_PROFILES.length > 1
+			) {
+				this.log.warn(
+					'Authentication profile "%s" was rejected during the cloud exchange; retrying with compatibility profile.',
+					this.authProfile.name,
+				);
+				this.clearCloudAuth();
+				await this.loginToMonsterWithProfile(AUTH_PROFILES[1]);
+				await this.acquireSphereTicket();
+				await this.signInToAyla();
+				return;
+			}
+
+			throw error;
+		}
 	}
 
 	private async loginToMonster(): Promise<void> {
@@ -518,6 +573,30 @@ export class MonsterApi {
 		}
 
 		this.log.info('Authenticating with Monster Smart Lighting cloud service...');
+		let lastError: unknown = null;
+
+		for (const profile of AUTH_PROFILES) {
+			try {
+				await this.loginToMonsterWithProfile(profile);
+				return;
+			} catch (error) {
+				lastError = error;
+
+				if (profile === AUTH_PROFILES[AUTH_PROFILES.length - 1] || !this.shouldTryNextAuthProfile(error)) {
+					break;
+				}
+
+				this.log.warn(
+					'Monster authentication profile "%s" was rejected; retrying with compatibility profile.',
+					profile.name,
+				);
+			}
+		}
+
+		throw lastError instanceof Error ? lastError : new Error('Monster authentication failed.');
+	}
+
+	private async loginToMonsterWithProfile(profile: AuthProfile): Promise<void> {
 		const response = await this.requestJson<MonsterLoginResponse>(
 			`${MONSTER_BASE_URL}/v4/auth/login`,
 			{
@@ -526,22 +605,17 @@ export class MonsterApi {
 					'accept': '*/*',
 					'accept-language': 'en-US;q=1.0',
 					'content-type': 'application/json',
-					'user-agent': MONSTER_USER_AGENT,
-					'x-copilot-sdk-version': MONSTER_SDK_VERSION,
+					'user-agent': profile.monsterUserAgent,
+					'x-copilot-sdk-version': profile.monsterSdkVersion,
 				},
 				body: JSON.stringify({
 					deviceDetails: {
-						osType: 'IOS',
-						deviceId: MONSTER_DEVICE_ID,
-						applicationVersion: '157',
+						...profile.deviceDetails,
 						timezone: {
 							currentTimeInClientInMilliseconds: Date.now(),
-							offsetFromUTCInMilliseconds: -28_800_000,
-							timeZoneId: 'America/Los_Angeles',
+							offsetFromUTCInMilliseconds: new Date().getTimezoneOffset() * -60_000,
+							timeZoneId: Intl.DateTimeFormat().resolvedOptions().timeZone,
 						},
-						deviceType: 'PHONE',
-						deviceModel: 'iPhone18,1',
-						osVersion: '26.5',
 					},
 					authenticationDetails: {
 						password: this.config.password,
@@ -557,13 +631,17 @@ export class MonsterApi {
 		this.monsterAccessToken = response.accessToken;
 		this.monsterRefreshToken = response.refreshToken;
 		this.monsterTokenExpiresAt = Date.now() + response.expiresIn * 1000;
+		this.authProfile = profile;
 
-		this.log.info('Monster authentication succeeded.');
+		this.log.info('Monster authentication succeeded using "%s" profile.', profile.name);
 	}
 
 	private async signInToAyla(): Promise<void> {
 		if (!this.spherePartnerTicket) {
 			throw new Error('Cannot sign in to Ayla without a Sphere partner ticket.');
+		}
+		if (!this.authProfile) {
+			throw new Error('Cannot sign in to Ayla without an authentication profile.');
 		}
 
 		this.log.info('Exchanging Sphere partner ticket for Ayla access token.');
@@ -575,7 +653,7 @@ export class MonsterApi {
 				headers: {
 					'accept': '*/*',
 					'content-type': 'application/json',
-					'user-agent': 'Runner/2.0.157(157) SDK: 9.0.8 (iPhone; iOS 26.5; Scale/3.00)',
+					'user-agent': this.authProfile.aylaUserAgent,
 				},
 				body: JSON.stringify({
 					token: this.spherePartnerTicket,
@@ -596,11 +674,14 @@ export class MonsterApi {
 		if (!this.aylaAccessToken) {
 			throw new Error('Ayla access token is not available.');
 		}
+		if (!this.authProfile) {
+			throw new Error('Ayla authentication profile is not available.');
+		}
 
 		return {
 			'accept': '*/*',
 			'authorization': `auth_token ${this.aylaAccessToken}`,
-			'x-ayla-source': 'Mobile',
+			'x-ayla-source': this.authProfile.aylaSource,
 		};
 	}
 	
@@ -667,6 +748,22 @@ export class MonsterApi {
 	
 		return error.message.includes('Request failed: 401')
 			|| error.message.includes('Request failed: 403');
+	}
+
+	private shouldTryNextAuthProfile(error: unknown): boolean {
+		if (!(error instanceof Error)) {
+			return false;
+		}
+
+		return this.isAuthError(error);
+	}
+
+	private clearCloudAuth(): void {
+		this.monsterAccessToken = null;
+		this.monsterRefreshToken = null;
+		this.monsterTokenExpiresAt = 0;
+		this.authProfile = null;
+		this.clearAylaAuth();
 	}
 	
 	private async requestJson<T>(url: string, init: RequestInit): Promise<T> {
