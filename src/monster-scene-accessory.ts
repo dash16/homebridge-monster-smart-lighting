@@ -63,12 +63,23 @@ export class MonsterSceneAccessory {
 	
 		const powerOn = power?.value === 1 || power?.value === true;
 	
-		return (
-			powerOn
-			&& this.family === 'diy'
-			&& state.mode === 'DIY'
-			&& state.diySlot === this.slot
-		);
+		if (!powerOn) {
+			return false;
+		}
+		
+		switch (this.family) {
+		case 'static':
+			return state.mode === 'scene' && state.staticSlot === this.slot;
+		
+		case 'dynamic':
+			return state.mode === 'dynamic' && state.dynamicSlot === this.slot;
+		
+		case 'diy':
+			return state.mode === 'DIY' && state.diySlot === this.slot;
+		
+		case 'music':
+			return state.mode === 'music' && state.musicSlot === this.slot;
+		}
 	}
 	
 	public async refreshState(): Promise<void> {

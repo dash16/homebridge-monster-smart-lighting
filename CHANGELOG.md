@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.2.2
+
+**Release Date:** 2026-06-10
+
+### Added
+- Added optional HomeKit switches for Monster Dynamic scenes.
+- Dynamic scenes are automatically discovered from compatible Monster devices.
+
+### Changed
+- Expanded scene category configuration to include future Static, Custom, and Music scene support.
+- Improved scene accessory state tracking for non-DIY scene families.
+
 ## v0.2.1
 
 **Release Date:** 2026-06-09
