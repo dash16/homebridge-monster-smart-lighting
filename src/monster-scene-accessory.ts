@@ -99,10 +99,10 @@ export class MonsterSceneAccessory {
 				error instanceof Error ? error.message : String(error),
 			);
 	
-			this.platform.debugLog(
-				'Scene state read failed for %s:',
+			this.platform.log.debug(
+				'Scene state read failed for %s: %s',
 				this.accessory.displayName,
-				error,
+				error instanceof Error ? error.stack ?? error.message : String(error),
 			);
 		}
 	
