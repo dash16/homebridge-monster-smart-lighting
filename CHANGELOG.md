@@ -1,5 +1,25 @@
 # Changelog
 
+## v0.2.4
+
+### Added
+- Added optional HomeKit switches for Monster Static scenes.
+- Added optional HomeKit switches for Monster Custom RGBIC scenes.
+- Added Custom scene discovery and activation support.
+- Added RGBIC preset state tracking through per_ic/per_ic_pat.
+
+### Changed
+- Extended active scene detection to support all Monster scene families:
+  - Static
+  - Dynamic
+  - DIY
+  - Music
+  - Custom RGBIC
+
+### Notes
+- Scene creation and editing remain managed through the Monster Smart Lighting application.
+- Homebridge now supports discovery and activation of all currently known Monster scene categories.
+
 ## v0.2.3
 
 ### Added
