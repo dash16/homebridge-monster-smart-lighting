@@ -66,31 +66,47 @@ export class MonsterSceneAccessory {
 	}
 	
 	private async handleOnGet(): Promise<boolean> {
-		const power = await this.monsterApi.getProperty(this.dsn, 'power');
-		const state = await this.monsterApi.getActiveSceneState(this.dsn);
+		try {
+			const power = await this.monsterApi.getProperty(this.dsn, 'power');
+			const state = await this.monsterApi.getActiveSceneState(this.dsn);
 	
-		const powerOn = power?.value === 1 || power?.value === true;
+			const powerOn = power?.value === 1 || power?.value === true;
 	
-		if (!powerOn) {
-			return false;
+			if (!powerOn) {
+				return false;
+			}
+	
+			switch (this.family) {
+			case 'static':
+				return state.mode === 'static' && state.staticSlot === this.slot;
+	
+			case 'dynamic':
+				return state.mode === 'dynamic' && state.dynamicSlot === this.slot;
+	
+			case 'diy':
+				return state.mode === 'DIY' && state.diySlot === this.slot;
+	
+			case 'music':
+				return state.mode === 'music' && state.musicSlot === this.slot;
+	
+			case 'custom':
+				return state.mode === 'per_ic' && state.customSlot === this.slot;
+			}
+		} catch (error) {
+			this.platform.log.warn(
+				'Unable to read scene state for %s; reporting Off. %s',
+				this.accessory.displayName,
+				error instanceof Error ? error.message : String(error),
+			);
+	
+			this.platform.debugLog(
+				'Scene state read failed for %s:',
+				this.accessory.displayName,
+				error,
+			);
 		}
-		
-		switch (this.family) {
-		case 'static':
-			return state.mode === 'static' && state.staticSlot === this.slot;
-		
-		case 'dynamic':
-			return state.mode === 'dynamic' && state.dynamicSlot === this.slot;
-		
-		case 'diy':
-			return state.mode === 'DIY' && state.diySlot === this.slot;
-		
-		case 'music':
-			return state.mode === 'music' && state.musicSlot === this.slot;
-			
-		case 'custom':
-			return state.mode === 'per_ic' && state.customSlot === this.slot;
-		}	
+	
+		return false;
 	}
 	
 	public async refreshState(): Promise<void> {
