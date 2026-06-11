@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.2.6
+
+**Release Date:** 2026-06-10
+
+### Fixed
+- Fixed Static scene accessories not applying the selected scene.
+- Updated Static scene activation to match Monster app behavior by setting `pause`, `mode`, `st_pat`, and the matching `stXX` scene payload.
+
 ## v0.2.5
 
 **Release Date:** 2026-06-10

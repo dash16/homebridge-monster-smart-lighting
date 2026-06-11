@@ -41,11 +41,19 @@ export class MonsterSceneAccessory {
 		if (value) {
 			await this.monsterApi.setProperty(this.dsn, 'power', 1);
 	
-			await this.monsterApi.activatePreset(
-				this.dsn,
-				this.family,
-				this.slot,
-			);
+			if (this.family === 'custom') {
+				await this.monsterApi.activateRgbicPreset(
+					this.dsn,
+					this.family,
+					this.slot,
+				);
+			} else {
+				await this.monsterApi.activatePreset(
+					this.dsn,
+					this.family,
+					this.slot,
+				);
+			}
 	
 			await this.platform.refreshSceneStates(this.dsn);
 	
@@ -69,7 +77,7 @@ export class MonsterSceneAccessory {
 		
 		switch (this.family) {
 		case 'static':
-			return state.mode === 'scene' && state.staticSlot === this.slot;
+			return state.mode === 'static' && state.staticSlot === this.slot;
 		
 		case 'dynamic':
 			return state.mode === 'dynamic' && state.dynamicSlot === this.slot;

@@ -113,6 +113,8 @@ export interface MonsterActiveSceneState {
 	customSlot?: number;
 }
 
+type RgbicActivationFamily = 'static' | 'custom';
+
 type AuthProfile = (typeof AUTH_PROFILES)[number];
 
 interface MonsterLoginResponse {
@@ -316,8 +318,29 @@ export class MonsterApi {
 		return this.getRgbicPresets(dsn);
 	}
 	
+	public async activateStaticPreset(dsn: string, slot: number): Promise<void> {
+		if (!Number.isInteger(slot) || slot < 0 || slot > 15) {
+			throw new Error(`Invalid static preset slot: ${slot}`);
+		}
+	
+		const propertyName = `st${slot.toString().padStart(2, '0')}`;
+	
+		const property = await this.getProperty(dsn, propertyName);
+	
+		if (typeof property?.value !== 'string') {
+			throw new Error(`Static preset ${propertyName} is unavailable.`);
+		}
+	
+		this.log.info('Activating static preset slot %d.', slot);
+	
+		await this.setProperty(dsn, 'pause', 0);
+		await this.setProperty(dsn, 'mode', 'static');
+		await this.setProperty(dsn, 'st_pat', slot);
+		await this.setProperty(dsn, propertyName, property.value);
+	}
+
 	public async activateCustomPreset(dsn: string, slot: number): Promise<void> {
-		await this.activateRgbicPreset(dsn, slot);
+		await this.activateRgbicPreset(dsn, 'custom', slot);
 	}
 	
 	public async getRgbicPresets(dsn: string): Promise<RgbicPreset[]> {
@@ -461,6 +484,11 @@ export class MonsterApi {
 		family: Exclude<MonsterPresetFamily, 'rgbic'>,
 		slot: number,
 	): Promise<void> {
+		if (family === 'static') {
+			await this.activateStaticPreset(dsn, slot);
+			return;
+		}
+
 		if (family === 'custom') {
 			await this.activateCustomPreset(dsn, slot);
 			return;
@@ -477,15 +505,27 @@ export class MonsterApi {
 		await this.setProperty(dsn, config.selector, slot);
 	}
 	
-	public async activateRgbicPreset(dsn: string, slot: number): Promise<void> {
-		if (!Number.isInteger(slot) || slot < 0 || slot > 4) {
-			throw new Error(`Invalid RGBIC preset slot: ${slot}`);
+	public async activateRgbicPreset(
+		dsn: string,
+		family: RgbicActivationFamily,
+		slot: number,
+	): Promise<void> {
+		const config = family === 'static'
+			? this.presetFamilies.static
+			: {
+				maxSlot: 4,
+				mode: 'per_ic',
+				selector: 'per_ic_pat',
+			};
+		
+		if (!Number.isInteger(slot) || slot < 0 || slot > config.maxSlot) {
+			throw new Error(`Invalid ${family} RGBIC preset slot: ${slot}`);
 		}
 	
-		this.log.info('Activating RGBIC preset slot %d.', slot);
+		this.log.info('Activating %s RGBIC preset slot %d.', family, slot);
 	
-		await this.setProperty(dsn, 'mode', 'per_ic');
-		await this.setProperty(dsn, 'per_ic_pat', slot);
+		await this.setProperty(dsn, 'mode', config.mode);
+		await this.setProperty(dsn, config.selector, slot);
 	}
 	
 	public async setRgbicPreset(
@@ -510,7 +550,7 @@ export class MonsterApi {
 		};
 	
 		await this.setProperty(dsn, propertyName, JSON.stringify(preset));
-		await this.activateRgbicPreset(dsn, slot);
+		await this.activateRgbicPreset(dsn, 'custom', slot);
 	}
 	
 	private async acquireSphereTicket(): Promise<void> {
