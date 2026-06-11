@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.2.3
+
+### Added
+- Added optional HomeKit switches for Monster Music scenes.
+- Music scenes are automatically discovered from compatible Monster devices when enabled in plugin settings.
+
+### Changed
+- Extended the existing scene accessory framework to support Music scene activation and state reporting.
+
 ## v0.2.2
 
 **Release Date:** 2026-06-10
