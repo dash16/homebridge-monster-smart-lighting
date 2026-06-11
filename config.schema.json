@@ -97,12 +97,6 @@
 					"diy": { "type": "array", "default": [], "items": { "type": "object" } },
 					"music": { "type": "array", "default": [], "items": { "type": "object" } }
 				}
-			},
-			"debug": {
-				"title": "Debug Logging",
-				"type": "boolean",
-				"default": false,
-				"description": "Enable extra diagnostic logging for troubleshooting. Leave disabled for normal use."
 			}
 		}
 	}

@@ -36,7 +36,6 @@ interface MonsterPlatformConfig extends PlatformConfig {
 	};
 	hiddenScenes?: MonsterHiddenScenesConfig;
 	discoveredScenes?: MonsterDiscoveredScenesConfig;
-	debug?: boolean;
 }
 
 export class MonsterSmartLighting implements DynamicPlatformPlugin {
@@ -80,6 +79,7 @@ export class MonsterSmartLighting implements DynamicPlatformPlugin {
 			this.monsterApi = new MonsterApi(this.log, {
 				email,
 				password,
+				debug: this.config.debug ?? false,
 			});
 		} else {
 			this.log.warn('Monster Smart Lighting email/password are not configured. No devices will be discovered.');
@@ -148,7 +148,7 @@ export class MonsterSmartLighting implements DynamicPlatformPlugin {
 		discoveredScenes.push(
 			...presets.map((preset) => ({
 				id: this.getSceneConfigId(dsn, category, preset.slot),
-				name: `${deviceName} ${preset.name}`,
+				name: `${deviceName} ${this.getSceneCategoryLabel(category)} - ${preset.name}`,
 			})),
 		);
 
@@ -189,7 +189,22 @@ export class MonsterSmartLighting implements DynamicPlatformPlugin {
 
 		this.log.info('Updated cached discovered scene list for the custom UI.');
 	}
-
+	
+	private getSceneCategoryLabel(category: MonsterSceneCategory): string {
+		switch (category) {
+		case 'diy':
+			return 'DIY';
+		case 'dynamic':
+			return 'Dynamic';
+		case 'static':
+			return 'Static';
+		case 'music':
+			return 'Music';
+		case 'custom':
+			return 'Custom';
+		}
+	}
+	
 	private registerSceneAccessories(
 		device: { dsn: string; productName: string },
 		category: MonsterSceneCategory,
@@ -221,7 +236,7 @@ export class MonsterSmartLighting implements DynamicPlatformPlugin {
 				continue;
 			}
 
-			const sceneName = `${device.productName} ${preset.name}`;
+			const sceneName = `${this.getSceneCategoryLabel(category)} - ${preset.name}`;
 			
 			if (existingSceneAccessory) {
 				this.log.info(

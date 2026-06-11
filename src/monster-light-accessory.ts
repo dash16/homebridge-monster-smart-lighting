@@ -107,7 +107,7 @@ export class MonsterLightAccessory {
 		
 		const pollIntervalMs = this.getPollIntervalMs();
 		
-		this.platform.log.debug(
+		this.platform.debugLog(
 			'Polling %s cloud state every %d seconds.',
 			this.device.productName,
 			Math.round(pollIntervalMs / 1000),
@@ -225,7 +225,7 @@ export class MonsterLightAccessory {
 		this.state.Hue = hue;
 		this.scheduleRgbColorUpdate();
 	
-		this.platform.log.debug(`Set ${this.device.productName} Hue ->`, hue);
+		this.platform.debugLog(`Set ${this.device.productName} Hue ->`, hue);
 	}
 
 	private async getHue(): Promise<CharacteristicValue> {
@@ -242,7 +242,7 @@ export class MonsterLightAccessory {
 		this.state.Saturation = saturation;
 		this.scheduleRgbColorUpdate();
 	
-		this.platform.log.debug(`Set ${this.device.productName} Saturation ->`, saturation);
+		this.platform.debugLog(`Set ${this.device.productName} Saturation ->`, saturation);
 	}
 
 	private async getSaturation(): Promise<CharacteristicValue> {

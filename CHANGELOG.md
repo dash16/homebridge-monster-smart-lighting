@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.2.7
+
+**Release Date:** 2026-06-11
+
+- Removed plugin-specific debug logging configuration.
+- Restored use of Homebridge’s native debug logging behavior.
+- Updated scene accessory naming to include scene category, avoiding duplicate names such as Static Halloween and Dynamic Halloween.
+- Updated scene accessory UUID generation so category-specific scene accessories remain distinct in Homebridge/HomeKit.
+
 ## v0.2.6
 
 **Release Date:** 2026-06-10

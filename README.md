@@ -129,8 +129,8 @@ The plugin authenticates with Monster Smart Lighting, exchanges credentials thro
 If a device is not discovered:
 
 1. Verify it appears in the Monster Smart Lighting app
-2. Restart Homebridge
-3. Enable debug logging
+2. Enable Homebridge Debug Mode
+3. Restart Homebridge
 4. Open an issue with:
 
    * Device model
