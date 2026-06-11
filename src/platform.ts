@@ -288,6 +288,76 @@ export class MonsterSmartLighting implements DynamicPlatformPlugin {
 					}
 				}
 				
+				if (this.config.sceneCategories?.music) {
+					const musicPresets = await this.monsterApi.getMusicPresets(device.dsn);
+				
+					for (const preset of musicPresets) {
+						const sceneUuid = this.api.hap.uuid.generate(
+							`${device.dsn}-music-${preset.slot}`,
+						);
+				
+						const sceneName = `${device.productName} ${preset.name}`;
+				
+						const existingSceneAccessory =
+							this.accessories.get(sceneUuid);
+				
+						if (existingSceneAccessory) {
+							this.log.info(
+								'Restoring existing scene accessory from cache:',
+								existingSceneAccessory.displayName,
+							);
+				
+							existingSceneAccessory.context.device = device;
+							existingSceneAccessory.context.preset = preset;
+				
+							this.api.updatePlatformAccessories([
+								existingSceneAccessory,
+							]);
+				
+							new MonsterSceneAccessory(
+								this,
+								existingSceneAccessory,
+								this.monsterApi,
+								device.dsn,
+								'music',
+								preset.slot,
+								sceneName,
+							);
+						} else {
+							this.log.info(
+								'Adding new scene accessory:',
+								sceneName,
+							);
+				
+							const sceneAccessory =
+								new this.api.platformAccessory(
+									sceneName,
+									sceneUuid,
+								);
+				
+							sceneAccessory.context.device = device;
+							sceneAccessory.context.preset = preset;
+				
+							new MonsterSceneAccessory(
+								this,
+								sceneAccessory,
+								this.monsterApi,
+								device.dsn,
+								'music',
+								preset.slot,
+								sceneName,
+							);
+				
+							this.api.registerPlatformAccessories(
+								PLUGIN_NAME,
+								PLATFORM_NAME,
+								[sceneAccessory],
+							);
+						}
+				
+						this.discoveredCacheUUIDs.push(sceneUuid);
+					}
+				}
 				this.discoveredCacheUUIDs.push(uuid);
 			}
 
