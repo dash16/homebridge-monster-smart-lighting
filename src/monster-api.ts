@@ -184,15 +184,7 @@ export class MonsterApi {
 		diy: { prefix: 'diy', maxSlot: 15, mode: 'DIY', selector: 'diy_pat' },
 		music: { prefix: 'mus', maxSlot: 5, mode: 'music', selector: 'mus_pat' },
 	} as const;
-	
-	private debugLog(message: string, ...parameters: unknown[]): void {
-		if (!this.config.debug) {
-			return;
-		}
-	
-		this.log.info(`[Debug] ${message}`, ...parameters);
-	}
-	
+		
 	constructor(
 		private readonly log: Logger,
 		private readonly config: MonsterApiConfig,
