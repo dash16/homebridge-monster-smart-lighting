@@ -1,6 +1,24 @@
 # Changelog
 
+## v0.2.5
+
+**Release Date:** 2026-06-10
+
+### Added
+- Added per-scene visibility controls in the Homebridge custom UI.
+- Added automatic discovery and caching of scene metadata for UI management.
+- Added visible/hidden scene organization for Static, Dynamic, DIY, Music, and Custom scenes.
+
+### Changed
+- Hidden scenes are now excluded from HomeKit accessory creation.
+- Hidden scene accessories are automatically removed from Homebridge cache and HomeKit.
+
+### Fixed
+- Prevented hidden scene accessories from reappearing after plugin restart.
+
 ## v0.2.4
+
+**Release Date:** 2026-06-10
 
 ### Added
 - Added optional HomeKit switches for Monster Static scenes.
@@ -21,6 +39,8 @@
 - Homebridge now supports discovery and activation of all currently known Monster scene categories.
 
 ## v0.2.3
+
+**Release Date:** 2026-06-10
 
 ### Added
 - Added optional HomeKit switches for Monster Music scenes.

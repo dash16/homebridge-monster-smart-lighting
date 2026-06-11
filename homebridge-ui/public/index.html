@@ -50,55 +50,59 @@
 				How often Homebridge checks Monster cloud state, in seconds. Default is 300.
 			</div>
 		</div>
+
 		<div class="card mb-3">
 			<div class="card-body">
 				<details>
 					<summary class="h5 card-title mb-3" style="cursor:pointer;">
 						Scene Accessories
 					</summary>
-		
+
 					<div class="alert alert-warning mb-3" role="alert">
 						<strong>Important:</strong>
 						Scene accessories may create a large number of HomeKit accessories depending on the number of scenes available on your devices.
 					</div>
-		
+
 					<p class="card-text">
 						Choose which Monster scene categories to expose as HomeKit switch accessories.
 						All scene categories are disabled by default.
 					</p>
-		
+
 					<div class="form-check mb-3">
 						<input type="checkbox" id="monsterSceneStatic" class="form-check-input">
 						<label for="monsterSceneStatic" class="form-check-label">Static Scenes</label>
 						<div class="form-text">Expose built-in static scenes as HomeKit switch accessories.</div>
 					</div>
-		
+
 					<div class="form-check mb-3">
 						<input type="checkbox" id="monsterSceneDynamic" class="form-check-input">
 						<label for="monsterSceneDynamic" class="form-check-label">Dynamic Scenes</label>
 						<div class="form-text">Expose built-in animated scenes as HomeKit switch accessories.</div>
 					</div>
-		
+
 					<div class="form-check mb-3">
 						<input type="checkbox" id="monsterSceneCustom" class="form-check-input">
 						<label for="monsterSceneCustom" class="form-check-label">Custom Scenes</label>
 						<div class="form-text">Expose saved custom scenes as HomeKit switch accessories.</div>
 					</div>
-		
+
 					<div class="form-check mb-3">
 						<input type="checkbox" id="monsterSceneDiy" class="form-check-input">
 						<label for="monsterSceneDiy" class="form-check-label">DIY Scenes</label>
 						<div class="form-text">Expose DIY scenes as HomeKit switch accessories.</div>
 					</div>
-		
+
 					<div class="form-check mb-3">
 						<input type="checkbox" id="monsterSceneMusic" class="form-check-input">
 						<label for="monsterSceneMusic" class="form-check-label">Music Scenes</label>
 						<div class="form-text">Expose music-reactive scenes as HomeKit switch accessories.</div>
 					</div>
+
+					<div id="monsterSceneVisibility" class="mt-3"></div>
 				</details>
 			</div>
 		</div>
+
 		<div class="form-check mb-3">
 			<input type="checkbox" id="monsterDebug" class="form-check-input">
 			<label for="monsterDebug" class="form-check-label">Debug Logging</label>
@@ -118,15 +122,161 @@ homebridge.addEventListener('ready', async () => {
 	const sceneCustomInput = document.getElementById('monsterSceneCustom');
 	const sceneDiyInput = document.getElementById('monsterSceneDiy');
 	const sceneMusicInput = document.getElementById('monsterSceneMusic');
+	const sceneVisibilityContainer = document.getElementById('monsterSceneVisibility');
 	const debugInput = document.getElementById('monsterDebug');
+
+	const sceneCategories = ['static', 'dynamic', 'custom', 'diy', 'music'];
+
+	const sceneCategoryLabels = {
+		static: 'Static Scenes',
+		dynamic: 'Dynamic Scenes',
+		custom: 'Custom Scenes',
+		diy: 'DIY Scenes',
+		music: 'Music Scenes',
+	};
 
 	let pluginConfig = await homebridge.getPluginConfig();
 	let cfg = pluginConfig[0] || {};
+
+	function normalizeHiddenScenes(hiddenScenes) {
+		return {
+			static: [],
+			dynamic: [],
+			custom: [],
+			diy: [],
+			music: [],
+			...(hiddenScenes || {}),
+		};
+	}
+
+	function normalizeDiscoveredScenes(discoveredScenes) {
+		return {
+			static: [],
+			dynamic: [],
+			custom: [],
+			diy: [],
+			music: [],
+			...(discoveredScenes || {}),
+		};
+	}
 
 	async function updateConfig(partial) {
 		cfg = { ...cfg, ...partial };
 		pluginConfig = [cfg];
 		await homebridge.updatePluginConfig(pluginConfig);
+	}
+
+	function getHiddenScenes(category) {
+		return cfg.hiddenScenes?.[category] || [];
+	}
+
+	function getDiscoveredScenes(category) {
+		return cfg.discoveredScenes?.[category] || [];
+	}
+
+	async function setSceneHidden(category, sceneId, hidden) {
+		const hiddenScenes = normalizeHiddenScenes(cfg.hiddenScenes);
+		const current = new Set(hiddenScenes[category] || []);
+
+		if (hidden) {
+			current.add(sceneId);
+		} else {
+			current.delete(sceneId);
+		}
+
+		hiddenScenes[category] = Array.from(current).sort();
+
+		await updateConfig({ hiddenScenes });
+	}
+
+	function createSceneCheckbox(category, scene, checked) {
+		const id = `monsterScene_${category}_${scene.id}`.replace(/[^a-zA-Z0-9_-]/g, '_');
+
+		const div = document.createElement('div');
+		div.className = 'form-check mb-2';
+
+		const sceneName = scene.name || scene.id;
+
+		div.innerHTML = `
+			<input type="checkbox" id="${id}" class="form-check-input" ${checked ? 'checked' : ''}>
+			<label for="${id}" class="form-check-label">${sceneName}</label>
+			<div class="form-text">${scene.id}</div>
+		`;
+
+		const input = div.querySelector('input');
+
+		input.addEventListener('change', async () => {
+			await setSceneHidden(category, scene.id, !input.checked);
+			renderSceneVisibility();
+		});
+
+		return div;
+	}
+
+	function renderSceneVisibility() {
+		sceneVisibilityContainer.innerHTML = '';
+
+		const enabledCategories = sceneCategories.filter(category => cfg.sceneCategories?.[category]);
+
+		if (!enabledCategories.length) {
+			return;
+		}
+
+		let renderedAnyCategory = false;
+
+		for (const category of enabledCategories) {
+			const discovered = getDiscoveredScenes(category);
+			const hiddenIds = new Set(getHiddenScenes(category));
+
+			if (!discovered.length) {
+				continue;
+			}
+
+			renderedAnyCategory = true;
+
+			const visible = discovered.filter(scene => !hiddenIds.has(scene.id));
+			const hidden = discovered.filter(scene => hiddenIds.has(scene.id));
+
+			const wrapper = document.createElement('div');
+			wrapper.className = 'card mb-3';
+
+			wrapper.innerHTML = `
+				<div class="card-body">
+					<h6 class="card-title">${sceneCategoryLabels[category]}</h6>
+
+					<details class="mb-2">
+						<summary style="cursor:pointer;">Visible Scenes (${visible.length})</summary>
+						<div class="mt-2" data-scene-list="visible"></div>
+					</details>
+
+					<details>
+						<summary style="cursor:pointer;">Hidden Scenes (${hidden.length})</summary>
+						<div class="mt-2" data-scene-list="hidden"></div>
+					</details>
+				</div>
+			`;
+
+			const visibleContainer = wrapper.querySelector('[data-scene-list="visible"]');
+			const hiddenContainer = wrapper.querySelector('[data-scene-list="hidden"]');
+
+			for (const scene of visible) {
+				visibleContainer.appendChild(createSceneCheckbox(category, scene, true));
+			}
+
+			for (const scene of hidden) {
+				hiddenContainer.appendChild(createSceneCheckbox(category, scene, false));
+			}
+
+			sceneVisibilityContainer.appendChild(wrapper);
+		}
+
+		if (!renderedAnyCategory) {
+			const notice = document.createElement('div');
+			notice.className = 'alert alert-info mb-3';
+			notice.setAttribute('role', 'alert');
+			notice.textContent = 'Scene visibility controls will appear here after enabled scene categories are discovered during plugin startup.';
+			sceneVisibilityContainer.appendChild(notice);
+		}
 	}
 
 	nameInput.value = cfg.name || 'Monster Smart Lighting';
@@ -154,8 +304,12 @@ homebridge.addEventListener('ready', async () => {
 				diy: sceneDiyInput.checked,
 				music: sceneMusicInput.checked,
 			},
+			hiddenScenes: normalizeHiddenScenes(cfg.hiddenScenes),
+			discoveredScenes: normalizeDiscoveredScenes(cfg.discoveredScenes),
 			debug: debugInput.checked,
 		});
+
+		renderSceneVisibility();
 	}
 
 	nameInput.addEventListener('change', syncConfigFromUi);
@@ -168,5 +322,7 @@ homebridge.addEventListener('ready', async () => {
 	sceneCustomInput.addEventListener('change', syncConfigFromUi);
 	sceneDiyInput.addEventListener('change', syncConfigFromUi);
 	sceneMusicInput.addEventListener('change', syncConfigFromUi);
+
+	renderSceneVisibility();
 });
 </script>

@@ -72,6 +72,32 @@
 					}
 				}
 			},
+			"hiddenScenes": {
+				"title": "Hidden Scenes",
+				"type": "object",
+				"default": {},
+				"description": "Scene accessories to hide from HomeKit. Managed by the custom UI.",
+				"properties": {
+					"static": { "type": "array", "default": [], "items": { "type": "string" } },
+					"dynamic": { "type": "array", "default": [], "items": { "type": "string" } },
+					"custom": { "type": "array", "default": [], "items": { "type": "string" } },
+					"diy": { "type": "array", "default": [], "items": { "type": "string" } },
+					"music": { "type": "array", "default": [], "items": { "type": "string" } }
+				}
+			},
+			"discoveredScenes": {
+				"title": "Discovered Scenes",
+				"type": "object",
+				"default": {},
+				"description": "Scenes discovered by the plugin. Managed automatically.",
+				"properties": {
+					"static": { "type": "array", "default": [], "items": { "type": "object" } },
+					"dynamic": { "type": "array", "default": [], "items": { "type": "object" } },
+					"custom": { "type": "array", "default": [], "items": { "type": "object" } },
+					"diy": { "type": "array", "default": [], "items": { "type": "object" } },
+					"music": { "type": "array", "default": [], "items": { "type": "object" } }
+				}
+			},
 			"debug": {
 				"title": "Debug Logging",
 				"type": "boolean",
