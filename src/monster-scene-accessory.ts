@@ -108,7 +108,7 @@ export class MonsterSceneAccessory {
 	
 		return false;
 	}
-	
+		
 	public async refreshState(): Promise<void> {
 		const active = await this.handleOnGet();
 	
