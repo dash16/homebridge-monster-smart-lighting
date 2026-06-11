@@ -79,7 +79,10 @@ export class MonsterSceneAccessory {
 		
 		case 'music':
 			return state.mode === 'music' && state.musicSlot === this.slot;
-		}
+			
+		case 'custom':
+			return state.mode === 'per_ic' && state.customSlot === this.slot;
+		}	
 	}
 	
 	public async refreshState(): Promise<void> {

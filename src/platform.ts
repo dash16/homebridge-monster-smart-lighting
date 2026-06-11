@@ -135,14 +135,15 @@ export class MonsterSmartLighting implements DynamicPlatformPlugin {
 				if (scenesEnabled) {
 					const activeSceneState = await this.monsterApi.getActiveSceneState(device.dsn);
 				
-					this.log.debug(
-						'Active scene state for %s: mode=%s static=%s dynamic=%s diy=%s music=%s',
+					this.log.info(
+						'Active scene state for %s: mode=%s static=%s dynamic=%s diy=%s music=%s custom=%s',
 						device.productName,
 						activeSceneState.mode,
 						activeSceneState.staticSlot ?? 'none',
 						activeSceneState.dynamicSlot ?? 'none',
 						activeSceneState.diySlot ?? 'none',
 						activeSceneState.musicSlot ?? 'none',
+						activeSceneState.customSlot ?? 'none',
 					);
 				}
 				
@@ -358,6 +359,149 @@ export class MonsterSmartLighting implements DynamicPlatformPlugin {
 						this.discoveredCacheUUIDs.push(sceneUuid);
 					}
 				}
+				
+				if (this.config.sceneCategories?.static) {
+					const staticPresets = await this.monsterApi.getStaticPresets(device.dsn);
+				
+					for (const preset of staticPresets) {
+						const sceneUuid = this.api.hap.uuid.generate(
+							`${device.dsn}-static-${preset.slot}`,
+						);
+				
+						const sceneName = `${device.productName} ${preset.name}`;
+				
+						const existingSceneAccessory =
+							this.accessories.get(sceneUuid);
+				
+						if (existingSceneAccessory) {
+							this.log.info(
+								'Restoring existing scene accessory from cache:',
+								existingSceneAccessory.displayName,
+							);
+				
+							existingSceneAccessory.context.device = device;
+							existingSceneAccessory.context.preset = preset;
+				
+							this.api.updatePlatformAccessories([
+								existingSceneAccessory,
+							]);
+				
+							new MonsterSceneAccessory(
+								this,
+								existingSceneAccessory,
+								this.monsterApi,
+								device.dsn,
+								'static',
+								preset.slot,
+								sceneName,
+							);
+						} else {
+							this.log.info(
+								'Adding new scene accessory:',
+								sceneName,
+							);
+				
+							const sceneAccessory =
+								new this.api.platformAccessory(
+									sceneName,
+									sceneUuid,
+								);
+				
+							sceneAccessory.context.device = device;
+							sceneAccessory.context.preset = preset;
+				
+							new MonsterSceneAccessory(
+								this,
+								sceneAccessory,
+								this.monsterApi,
+								device.dsn,
+								'static',
+								preset.slot,
+								sceneName,
+							);
+				
+							this.api.registerPlatformAccessories(
+								PLUGIN_NAME,
+								PLATFORM_NAME,
+								[sceneAccessory],
+							);
+						}
+				
+						this.discoveredCacheUUIDs.push(sceneUuid);
+					}
+				}
+				
+				if (this.config.sceneCategories?.custom) {
+					const customPresets = await this.monsterApi.getCustomPresets(device.dsn);
+				
+					for (const preset of customPresets) {
+						const sceneUuid = this.api.hap.uuid.generate(
+							`${device.dsn}-custom-${preset.slot}`,
+						);
+				
+						const sceneName = `${device.productName} ${preset.name}`;
+				
+						const existingSceneAccessory =
+							this.accessories.get(sceneUuid);
+				
+						if (existingSceneAccessory) {
+							this.log.info(
+								'Restoring existing scene accessory from cache:',
+								existingSceneAccessory.displayName,
+							);
+				
+							existingSceneAccessory.context.device = device;
+							existingSceneAccessory.context.preset = preset;
+				
+							this.api.updatePlatformAccessories([
+								existingSceneAccessory,
+							]);
+				
+							new MonsterSceneAccessory(
+								this,
+								existingSceneAccessory,
+								this.monsterApi,
+								device.dsn,
+								'custom',
+								preset.slot,
+								sceneName,
+							);
+						} else {
+							this.log.info(
+								'Adding new scene accessory:',
+								sceneName,
+							);
+				
+							const sceneAccessory =
+								new this.api.platformAccessory(
+									sceneName,
+									sceneUuid,
+								);
+				
+							sceneAccessory.context.device = device;
+							sceneAccessory.context.preset = preset;
+				
+							new MonsterSceneAccessory(
+								this,
+								sceneAccessory,
+								this.monsterApi,
+								device.dsn,
+								'custom',
+								preset.slot,
+								sceneName,
+							);
+				
+							this.api.registerPlatformAccessories(
+								PLUGIN_NAME,
+								PLATFORM_NAME,
+								[sceneAccessory],
+							);
+						}
+				
+						this.discoveredCacheUUIDs.push(sceneUuid);
+					}
+				}
+				
 				this.discoveredCacheUUIDs.push(uuid);
 			}
 

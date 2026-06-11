@@ -65,7 +65,8 @@ export interface MonsterDevice {
 	connectionStatus: string | null;
 	key: number;
 }
-export type MonsterPresetFamily = 'static' | 'dynamic' | 'diy' | 'music' | 'rgbic';
+
+export type MonsterPresetFamily = 'static' | 'dynamic' | 'diy' | 'music' | 'custom' | 'rgbic';
 
 export interface MonsterPreset {
 	family: MonsterPresetFamily;
@@ -109,6 +110,7 @@ export interface MonsterActiveSceneState {
 	dynamicSlot?: number;
 	diySlot?: number;
 	musicSlot?: number;
+	customSlot?: number;
 }
 
 type AuthProfile = (typeof AUTH_PROFILES)[number];
@@ -283,7 +285,7 @@ export class MonsterApi {
 		);
 	}
 	
-	public async getPresets(dsn: string, family: Exclude<MonsterPresetFamily, 'rgbic'>): Promise<MonsterPreset[]> {
+	public async getPresets(dsn: string, family: Exclude<MonsterPresetFamily, 'rgbic' | 'custom'>): Promise<MonsterPreset[]> {
 		const properties = await this.getProperties(dsn);
 		const config = this.presetFamilies[family];
 	
@@ -310,6 +312,14 @@ export class MonsterApi {
 		return this.getPresets(dsn, 'music');
 	}
 	
+	public async getCustomPresets(dsn: string): Promise<RgbicPreset[]> {
+		return this.getRgbicPresets(dsn);
+	}
+	
+	public async activateCustomPreset(dsn: string, slot: number): Promise<void> {
+		await this.activateRgbicPreset(dsn, slot);
+	}
+	
 	public async getRgbicPresets(dsn: string): Promise<RgbicPreset[]> {
 		const properties = await this.getProperties(dsn);
 	
@@ -327,9 +337,10 @@ export class MonsterApi {
 			this.getProperty(dsn, 'dyn_pat'),
 			this.getProperty(dsn, 'diy_pat'),
 			this.getProperty(dsn, 'mus_pat'),
+			this.getProperty(dsn, 'per_ic_pat'),
 		]);
-	
-		const [mode, staticSlot, dynamicSlot, diySlot, musicSlot] = properties;
+		
+		const [mode, staticSlot, dynamicSlot, diySlot, musicSlot, customSlot] = properties;
 	
 		return {
 			mode: typeof mode?.value === 'string' ? mode.value : null,
@@ -337,10 +348,11 @@ export class MonsterApi {
 			dynamicSlot: typeof dynamicSlot?.value === 'number' ? dynamicSlot.value : undefined,
 			diySlot: typeof diySlot?.value === 'number' ? diySlot.value : undefined,
 			musicSlot: typeof musicSlot?.value === 'number' ? musicSlot.value : undefined,
+			customSlot: typeof customSlot?.value === 'number' ? customSlot.value : undefined,
 		};
 	}
 	
-	private parsePreset(property: MonsterProperty, family: Exclude<MonsterPresetFamily, 'rgbic'>): MonsterPreset | null {
+	private parsePreset(property: MonsterProperty, family: Exclude<MonsterPresetFamily, 'rgbic' | 'custom'>): MonsterPreset | null {
 		if (typeof property.value !== 'string' || !property.value.trim()) {
 			return null;
 		}
@@ -449,6 +461,10 @@ export class MonsterApi {
 		family: Exclude<MonsterPresetFamily, 'rgbic'>,
 		slot: number,
 	): Promise<void> {
+		if (family === 'custom') {
+			await this.activateCustomPreset(dsn, slot);
+			return;
+		}
 		const config = this.presetFamilies[family];
 	
 		if (!Number.isInteger(slot) || slot < 0 || slot > config.maxSlot) {
