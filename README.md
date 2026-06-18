@@ -29,6 +29,7 @@ This plugin connects to your Monster Smart Lighting account, discovers supported
 * Brightness control
 * Color temperature control
 * RGB color control
+* RGBIC scene support
 * HomeKit state synchronization
 * Child bridge compatible
 * Homebridge UI configuration support
@@ -36,18 +37,32 @@ This plugin connects to your Monster Smart Lighting account, discovers supported
 
 ---
 
-## Supported Devices
+## Supported Platforms and Devices
 
-The plugin currently supports Monster lighting devices that expose standard lighting capabilities through the Monster Smart Lighting cloud platform.
+This plugin supports devices that use the **Monster Smart Lighting** app.
+
+It does **not** support legacy **Monster Illuminessence** devices that use the older Monster Smart app.
+
+[Monster Smart Lighting FAQ](https://monsterilluminessence.com/pages/smart-lighting)
 
 Tested functionality includes:
 
+### Standard Lighting Devices
 * Power control
 * Brightness control
 * Color temperature control
 * RGB color control
 
-Additional RGBIC-specific features such as segments, scenes, DIY modes, and music modes are planned for future releases.
+### RGBIC Devices
+* Power control
+* Brightness control
+* RGB color control
+* DIY scenes
+* Dynamic scenes
+* Static scenes
+* Music scenes
+* Custom scenes
+* Scene visibility controls
 
 If a device appears incorrectly in HomeKit or is missing functionality, please open an issue with:
 
@@ -93,16 +108,19 @@ Devices that support both RGB color and color temperature are exposed using stan
 
 ### RGBIC Features
 
-The current release focuses on standard lighting controls.
+Compatible RGBIC devices can expose built-in scenes as individual HomeKit switch accessories.
 
-Advanced RGBIC functionality such as:
+Supported scene categories include:
 
-* Segment control
-* Dynamic scenes
-* DIY modes
-* Music modes
+* DIY
+* Dynamic
+* Static
+* Music
+* Custom
 
-is planned for future releases as HomeKit-compatible implementations are evaluated.
+Scene categories can be enabled or disabled individually from the Homebridge configuration UI. Individual scenes can also be hidden if desired to reduce accessory count.
+
+At this time, scene activation is supported, but direct segment-level RGBIC editing remains available only through the Monster Smart Lighting app.
 
 ---
 ## Technical Notes
