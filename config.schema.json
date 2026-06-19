@@ -5,6 +5,7 @@
 	"customUi": true,
 	"schema": {
 		"type": "object",
+		"required": ["email", "password"],
 		"properties": {
 			"name": {
 				"title": "Plugin Name",
@@ -16,14 +17,12 @@
 				"title": "Monster Account Email",
 				"type": "string",
 				"format": "email",
-				"required": true,
 				"description": "Email address used to sign in to the Monster Smart Lighting app."
 			},
 			"password": {
 				"title": "Monster Account Password",
 				"type": "string",
 				"format": "password",
-				"required": true,
 				"description": "Password used to sign in to the Monster Smart Lighting app."
 			},
 			"pollIntervalSeconds": {
