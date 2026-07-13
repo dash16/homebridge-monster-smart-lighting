@@ -3,6 +3,7 @@
   <img src="homebridge-ui/public/icon.png" width="256" alt="Monster Smart Lighting">
 </p>
 
+[![verified-by-homebridge](https://img.shields.io/badge/homebridge-verified-blueviolet?color=%23491F59&style=flat)](https://github.com/homebridge/homebridge/wiki/Verified-Plugins)
 ![platform](https://img.shields.io/badge/type-platform-lightgrey)
 [![npm](https://img.shields.io/npm/v/homebridge-monster-smart-lighting.svg)](https://www.npmjs.com/package/homebridge-monster-smart-lighting)
 [![npm downloads](https://img.shields.io/npm/dm/homebridge-monster-smart-lighting.svg)](https://www.npmjs.com/package/homebridge-monster-smart-lighting)
