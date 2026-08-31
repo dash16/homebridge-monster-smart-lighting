@@ -41,6 +41,7 @@
 	"scripts": {
 		"build": "rimraf ./dist && tsc",
 		"lint": "eslint . --max-warnings=0",
+		"test:auth-profiles": "node ./scripts/auth-profile-matrix.mjs",
 		"prepublishOnly": "npm run lint && npm run build",
 		"watch": "npm run build && npm link && nodemon"
 	},

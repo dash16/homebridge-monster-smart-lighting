@@ -79,7 +79,6 @@ export class MonsterSmartLighting implements DynamicPlatformPlugin {
 			this.monsterApi = new MonsterApi(this.log, {
 				email,
 				password,
-				debug: this.config.debug ?? false,
 			});
 		} else {
 			this.log.warn('Monster Smart Lighting email/password are not configured. No devices will be discovered.');

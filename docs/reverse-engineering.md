@@ -10,6 +10,24 @@ The goal is to document API behavior, authentication flows, device models, and p
 
 ## Authentication Flow
 
+### Authentication Profile Matrix
+
+The repository includes a deliberately paced diagnostic matrix for testing which client-profile fields the Monster login service currently accepts. It runs sequentially, enforces a minimum ten-second delay between attempts, and prints only sanitized status metadata.
+
+Preview the cases without making network requests:
+
+```bash
+npm run test:auth-profiles
+```
+
+Run the matrix after supplying credentials through the environment (avoid putting the password directly in shell history):
+
+```bash
+npm run test:auth-profiles -- --run
+```
+
+Set `AUTH_TEST_COOLDOWN_SECONDS` to use a longer delay. Values below ten seconds are ignored. The runner stops automatically on HTTP 401, 403, or 429 responses.
+
 ### Step 1: Monster Login
 
 The mobile application authenticates against:
@@ -40,6 +58,10 @@ Response:
   "expiresIn": 3000
 }
 ```
+
+#### Device ID validation
+
+As of August 2026, the login service returns HTTP 500 when `deviceDetails.deviceId` is a descriptive value such as `homebridge-monster-smart-lighting`. Controlled testing confirmed that other generic Homebridge headers and device fields remain accepted individually. A UUID-formatted placeholder (`00000000-0000-0000-0000-000000000000`) returns HTTP 201 and is used by the generic Homebridge profile.
 
 ---
 ### Step 2: Sphere Token / Session Flow

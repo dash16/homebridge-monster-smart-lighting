@@ -5,7 +5,6 @@
 	"customUi": true,
 	"schema": {
 		"type": "object",
-		"required": ["email", "password"],
 		"properties": {
 			"name": {
 				"title": "Plugin Name",

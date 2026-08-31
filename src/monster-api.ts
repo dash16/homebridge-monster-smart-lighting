@@ -15,6 +15,9 @@ const AYLA_APP_ID = 'RGBIC-yQ-id';
 const AYLA_APP_SECRET = 'RGBIC-O7v7HvMh9OjQBz8eA6tL6Pprp8U';
 
 const TOKEN_EXPIRY_BUFFER_MS = 60_000;
+const AUTH_LOGIN_MAX_ATTEMPTS = 3;
+const AUTH_LOGIN_RETRY_DELAY_MS = 1_000;
+const HOMEBRIDGE_DEVICE_ID = '00000000-0000-0000-0000-000000000000';
 
 const AUTH_PROFILES = [
 	{
@@ -25,7 +28,7 @@ const AUTH_PROFILES = [
 	  aylaSource: 'Mobile',
 	  deviceDetails: {
 	    osType: 'ANDROID',
-	    deviceId: 'homebridge-monster-smart-lighting',
+	    deviceId: HOMEBRIDGE_DEVICE_ID,
 	    applicationVersion: 'homebridge',
 	    deviceType: 'PC',
 	    deviceModel: 'Homebridge',
@@ -52,7 +55,6 @@ const AUTH_PROFILES = [
 export interface MonsterApiConfig {
 	email: string;
 	password: string;
-	debug?: boolean;
 }
 
 export interface MonsterDevice {
@@ -175,7 +177,8 @@ export class MonsterApi {
 	private aylaAccessToken: string | null = null;
 	private aylaRefreshToken: string | null = null;
 	private aylaTokenExpiresAt = 0;
-	
+		
+	private authenticationPromise: Promise<void> | null = null;
 	private authRecoveryPromise: Promise<void> | null = null;
 	
 	private readonly presetFamilies = {
@@ -597,6 +600,17 @@ export class MonsterApi {
 			return;
 		}
 
+		if (!this.authenticationPromise) {
+			this.authenticationPromise = this.authenticateToAyla()
+				.finally(() => {
+					this.authenticationPromise = null;
+				});
+		}
+
+		await this.authenticationPromise;
+	}
+
+	private async authenticateToAyla(): Promise<void> {
 		try {
 			await this.loginToMonster();
 			await this.acquireSphereTicket();
@@ -654,34 +668,58 @@ export class MonsterApi {
 	}
 
 	private async loginToMonsterWithProfile(profile: AuthProfile): Promise<void> {
-		const response = await this.requestJson<MonsterLoginResponse>(
-			`${MONSTER_BASE_URL}/v4/auth/login`,
-			{
-				method: 'POST',
-				headers: {
-					'accept': '*/*',
-					'accept-language': 'en-US;q=1.0',
-					'content-type': 'application/json',
-					'user-agent': profile.monsterUserAgent,
-					'x-copilot-sdk-version': profile.monsterSdkVersion,
-				},
-				body: JSON.stringify({
-					deviceDetails: {
-						...profile.deviceDetails,
-						timezone: {
-							currentTimeInClientInMilliseconds: Date.now(),
-							offsetFromUTCInMilliseconds: new Date().getTimezoneOffset() * -60_000,
-							timeZoneId: Intl.DateTimeFormat().resolvedOptions().timeZone,
+		let response: MonsterLoginResponse | null = null;
+
+		for (let attempt = 1; attempt <= AUTH_LOGIN_MAX_ATTEMPTS; attempt++) {
+			try {
+				response = await this.requestJson<MonsterLoginResponse>(
+					`${MONSTER_BASE_URL}/v4/auth/login`,
+					{
+						method: 'POST',
+						headers: {
+							'accept': '*/*',
+							'accept-language': 'en-US;q=1.0',
+							'content-type': 'application/json',
+							'user-agent': profile.monsterUserAgent,
+							'x-copilot-sdk-version': profile.monsterSdkVersion,
 						},
+						body: JSON.stringify({
+							deviceDetails: {
+								...profile.deviceDetails,
+								timezone: {
+									currentTimeInClientInMilliseconds: Date.now(),
+									offsetFromUTCInMilliseconds: new Date().getTimezoneOffset() * -60_000,
+									timeZoneId: Intl.DateTimeFormat().resolvedOptions().timeZone,
+								},
+							},
+							authenticationDetails: {
+								password: this.config.password,
+								email: this.config.email,
+								applicationId: MONSTER_APPLICATION_ID,
+							},
+						}),
 					},
-					authenticationDetails: {
-						password: this.config.password,
-						email: this.config.email,
-						applicationId: MONSTER_APPLICATION_ID,
-					},
-				}),
-			},
-		);
+				);
+				break;
+			} catch (error) {
+				if (attempt === AUTH_LOGIN_MAX_ATTEMPTS || !this.isTransientServerError(error)) {
+					throw error;
+				}
+
+				const retryDelayMs = AUTH_LOGIN_RETRY_DELAY_MS * attempt;
+				this.log.warn(
+					'Monster authentication service returned a server error; retrying in %d second(s) (attempt %d/%d).',
+					retryDelayMs / 1000,
+					attempt + 1,
+					AUTH_LOGIN_MAX_ATTEMPTS,
+				);
+				await this.delay(retryDelayMs);
+			}
+		}
+
+		if (!response) {
+			throw new Error('Monster authentication did not return a response.');
+		}
 		if (!response.accessToken || !response.refreshToken || !response.expiresIn) {
 			throw new Error('Monster authentication response did not include expected token fields.');
 		}
@@ -812,7 +850,21 @@ export class MonsterApi {
 			return false;
 		}
 
-		return this.isAuthError(error);
+		return this.isAuthError(error) || this.isTransientServerError(error);
+	}
+
+	private isTransientServerError(error: unknown): boolean {
+		if (!(error instanceof Error)) {
+			return false;
+		}
+
+		return /Request failed: 5\d\d\b/u.test(error.message);
+	}
+
+	private async delay(milliseconds: number): Promise<void> {
+		await new Promise<void>((resolve) => {
+			setTimeout(resolve, milliseconds);
+		});
 	}
 
 	private clearCloudAuth(): void {

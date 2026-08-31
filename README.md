@@ -140,7 +140,7 @@ The plugin authenticates with Monster Smart Lighting, exchanges credentials thro
 
 1. Confirm the device still responds in the Monster Smart Lighting app
 2. Restart Homebridge
-3. Enable debug logging
+3. Enable Homebridge Debug Mode
 4. Check Homebridge logs for authentication or cloud communication errors
 
 ### Missing devices

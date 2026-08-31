@@ -30,6 +30,11 @@
 			<label for="monsterPassword" class="form-label">Password</label>
 			<input type="password" id="monsterPassword" class="form-control" autocomplete="current-password">
 		</div>
+
+		<button type="button" id="monsterLogout" class="btn btn-outline-danger">
+			Clear Saved Credentials
+		</button>
+		<div class="form-text">Removes the saved Monster account email and password from Homebridge configuration.</div>
 	</div>
 </div>
 
@@ -103,11 +108,6 @@
 			</div>
 		</div>
 
-		<div class="form-check mb-3">
-			<input type="checkbox" id="monsterDebug" class="form-check-input">
-			<label for="monsterDebug" class="form-check-label">Debug Logging</label>
-			<div class="form-text">Enable extra diagnostic logging for troubleshooting.</div>
-		</div>
 	</div>
 </div>
 
@@ -116,6 +116,7 @@ homebridge.addEventListener('ready', async () => {
 	const nameInput = document.getElementById('monsterName');
 	const emailInput = document.getElementById('monsterEmail');
 	const passwordInput = document.getElementById('monsterPassword');
+	const logoutButton = document.getElementById('monsterLogout');
 	const pollIntervalInput = document.getElementById('monsterPollIntervalSeconds');
 	const sceneStaticInput = document.getElementById('monsterSceneStatic');
 	const sceneDynamicInput = document.getElementById('monsterSceneDynamic');
@@ -123,7 +124,6 @@ homebridge.addEventListener('ready', async () => {
 	const sceneDiyInput = document.getElementById('monsterSceneDiy');
 	const sceneMusicInput = document.getElementById('monsterSceneMusic');
 	const sceneVisibilityContainer = document.getElementById('monsterSceneVisibility');
-	const debugInput = document.getElementById('monsterDebug');
 
 	const sceneCategories = ['static', 'dynamic', 'custom', 'diy', 'music'];
 
@@ -162,6 +162,7 @@ homebridge.addEventListener('ready', async () => {
 
 	async function updateConfig(partial) {
 		cfg = { ...cfg, ...partial };
+		delete cfg.debug;
 		pluginConfig = [cfg];
 		await homebridge.updatePluginConfig(pluginConfig);
 	}
@@ -283,7 +284,6 @@ homebridge.addEventListener('ready', async () => {
 	emailInput.value = cfg.email || '';
 	passwordInput.value = cfg.password || '';
 	pollIntervalInput.value = cfg.pollIntervalSeconds || 300;
-	debugInput.checked = !!cfg.debug;
 	sceneStaticInput.checked = !!cfg.sceneCategories?.static;
 	sceneDynamicInput.checked = !!cfg.sceneCategories?.dynamic;
 	sceneCustomInput.checked = !!cfg.sceneCategories?.custom;
@@ -306,7 +306,6 @@ homebridge.addEventListener('ready', async () => {
 			},
 			hiddenScenes: normalizeHiddenScenes(cfg.hiddenScenes),
 			discoveredScenes: normalizeDiscoveredScenes(cfg.discoveredScenes),
-			debug: debugInput.checked,
 		});
 
 		renderSceneVisibility();
@@ -316,12 +315,25 @@ homebridge.addEventListener('ready', async () => {
 	emailInput.addEventListener('change', syncConfigFromUi);
 	passwordInput.addEventListener('change', syncConfigFromUi);
 	pollIntervalInput.addEventListener('change', syncConfigFromUi);
-	debugInput.addEventListener('change', syncConfigFromUi);
 	sceneStaticInput.addEventListener('change', syncConfigFromUi);
 	sceneDynamicInput.addEventListener('change', syncConfigFromUi);
 	sceneCustomInput.addEventListener('change', syncConfigFromUi);
 	sceneDiyInput.addEventListener('change', syncConfigFromUi);
 	sceneMusicInput.addEventListener('change', syncConfigFromUi);
+
+	logoutButton.addEventListener('click', async () => {
+		if (!window.confirm('Clear the saved Monster Smart Lighting credentials?')) {
+			return;
+		}
+
+		delete cfg.email;
+		delete cfg.password;
+		delete cfg.debug;
+		emailInput.value = '';
+		passwordInput.value = '';
+		pluginConfig = [cfg];
+		await homebridge.updatePluginConfig(pluginConfig);
+	});
 
 	renderSceneVisibility();
 });
